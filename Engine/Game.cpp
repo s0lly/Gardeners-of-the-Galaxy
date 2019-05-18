@@ -39,21 +39,23 @@ void Game::Go()
 
 void Game::ProcessInput()
 {
+	Mat2 playerRotation = Mat2::RotationMatrix(player.angle);
+
 	if (wnd.kbd.KeyIsPressed('W'))
 	{
-		player.velocity.y += 0.02f;
+		player.velocity = player.velocity + Vec2{0.0f, 0.02f } * playerRotation;
 	}
 	if (wnd.kbd.KeyIsPressed('S'))
 	{
-		player.velocity.y -= 0.02f;
+		player.velocity = player.velocity + Vec2{ 0.0f, -0.02f } * playerRotation;
 	}
 	if (wnd.kbd.KeyIsPressed('A'))
 	{
-		player.velocity.x -= 0.02f;
+		player.velocity = player.velocity + Vec2{ -0.02f, 0.0f } * playerRotation;
 	}
 	if (wnd.kbd.KeyIsPressed('D'))
 	{
-		player.velocity.x += 0.02f;
+		player.velocity = player.velocity + Vec2{ 0.02f, 0.0f } * playerRotation;
 	}
 
 }
@@ -63,15 +65,20 @@ void Game::UpdateModel()
 	Vec2 domeLoc{ 0.0f, 0.0f };
 	float domeRadius = 1000.0f;
 
-	float gravityAcceleration = 0.01f;
+	float gravityAccelerationMagnitude = 0.01f;
 
-	player.velocity = player.velocity + Vec2{ 0.0f, -gravityAcceleration };
+	Vec2 vectorFromPlayerToWorld = (world.loc - player.centerBotLoc);
 
-	Vec2 newPosition = player.centerLoc + player.velocity;
+	Vec2 gravityAcceleration = vectorFromPlayerToWorld.GetNormalized() * gravityAccelerationMagnitude;
+
+
+	player.velocity = player.velocity + gravityAcceleration;
+
+	Vec2 newPosition = player.centerBotLoc + player.velocity;
 
 	if (!((newPosition - world.loc).GetMagnitudeSqrd() < (world.radius * world.radius)))
 	{
-		player.centerLoc = newPosition;
+		player.centerBotLoc = newPosition;
 	}
 	else
 	{
@@ -80,12 +87,23 @@ void Game::UpdateModel()
 
 	if (!((newPosition + Vec2{ 0.0f, player.height } - domeLoc).GetMagnitudeSqrd() > (domeRadius * domeRadius)))
 	{
-		player.centerLoc = newPosition;
+		player.centerBotLoc = newPosition;
 	}
 	else
 	{
 		player.velocity = { 0.0f, -player.velocity.y };
 	}
+
+	camera.loc = player.centerBotLoc + Vec2(0.0f, (float)player.height / 2.0f);
+
+	player.angle = 0.0f;
+
+	Vec2 yUpNormalized{ 0.0f, 1.0f };
+	Vec2 playerLocNormalized = player.centerBotLoc.GetNormalized();
+
+	player.angle = acosf(yUpNormalized.Dot(playerLocNormalized)) * (player.centerBotLoc.x >= 0.0f ? 1.0f : -1.0f);
+
+	camera.angle = player.angle;
 
 }
 
@@ -102,11 +120,12 @@ void Game::ComposeFrame()
 	Vec2 screenTransformFlip{ 1.0f,-1.0f };
 	Vec2 screenTransformShift{ (float)(gfx.ScreenWidth / 2),(float)(gfx.ScreenHeight / 2) };
 
+	Mat2 cameraRotation = Mat2::RotationMatrix(camera.angle);
 
-	gfx.DrawCircle((planetLoc - camera.loc) * screenTransformFlip + screenTransformShift, planetRadius, Colors::Blue);
-	gfx.DrawCircle((domeLoc - camera.loc) * screenTransformFlip + screenTransformShift, domeRadius, Colors::LightGray, 0.5f);
-	gfx.DrawCircle((world.loc - camera.loc) * screenTransformFlip + screenTransformShift, world.radius, Colors::Gray);
+	gfx.DrawCircle(((planetLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, planetRadius, Colors::Blue);
+	gfx.DrawCircle(((domeLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, domeRadius, Colors::LightGray, 0.5f);
+	gfx.DrawCircle(((world.loc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, world.radius, Colors::Gray);
 
-	gfx.DrawRect((player.centerLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue);
+	gfx.DrawRect((player.centerBotLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue);
 
 }

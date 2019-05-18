@@ -4,7 +4,7 @@
 
 struct Player
 {
-	Vec2 centerLoc{ 0.0f, 800.0f };
+	Vec2 centerBotLoc{ 0.0f, 801.0f };
 	float angle = 0.0f;
 
 	Vec2 velocity{ 0.0f, 0.0f };

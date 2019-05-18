@@ -12,7 +12,7 @@
 
 #define PI 3.1415926f
 
-
+struct Mat2;
 
 struct Vec2
 {
@@ -83,7 +83,31 @@ struct Vec2
 		return x * rhs.x + y * rhs.y;
 	}
 
+	Vec2 operator *(Mat2& rhs);
+
 
 	float x;
 	float y;
+};
+
+
+
+struct Mat2
+{
+	Mat2 GetTranspose()
+	{
+		return Mat2{ a, c, b, d };
+	}
+
+
+	static Mat2 RotationMatrix (float angle)
+	{
+		return Mat2{ cosf(angle), sinf(-angle), sinf(angle), cosf(angle) };
+	}
+
+
+	float a;
+	float b;
+	float c;
+	float d;
 };
