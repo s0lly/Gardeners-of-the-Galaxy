@@ -153,13 +153,15 @@ void Game::ComposeFrame()
 {
 	moonAngleToPlanet += 0.001f;
 
-	moonLoc.x = -200.0f + cos(moonAngleToPlanet) * 400.0f;
+	moonLoc.x = -400.0f + cos(moonAngleToPlanet) * 400.0f;
 	moonZ = 1.0f + (sin(moonAngleToPlanet) + 1.0f);
 
 	Vec2 screenTransformFlip{ 1.0f,-1.0f };
 	Vec2 screenTransformShift{ (float)(gfx.ScreenWidth / 2),(float)(gfx.ScreenHeight / 2) };
 
 	Mat2 cameraRotation = Mat2::RotationMatrix(camera.angle);
+
+	gfx.DrawCircleWithIncreasingAlphaToEdge(((planet1Loc)* cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, planet1Radius, Colors::Yellow, 0.0f, 0.2f, 0.0f);
 
 	for (int i = 0; i < starmap.size(); i++)
 	{
@@ -173,11 +175,15 @@ void Game::ComposeFrame()
 	}
 	else
 	{
-		gfx.DrawCircle(((planetLoc - camera.loc / (1000.0f * moonZ)) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, planetRadius, Colors::Green);
-		gfx.DrawCircle(((moonLoc - camera.loc / (1000.0f * planetZ)) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, moonRadius / moonZ, Colors::Gray);
+		gfx.DrawCircle(((planetLoc - camera.loc / (1000.0f * planetZ)) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, planetRadius, Colors::Green);
+		gfx.DrawCircle(((moonLoc - camera.loc / (1000.0f * moonZ)) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, moonRadius / moonZ, Colors::Gray);
 	}
 
+
+
 	gfx.DrawCircleWithIncreasingAlphaToEdge(((dome.loc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, dome.radius, dome.GetAtmosphereCombinedColor(), world.radius, 0.1f, 0.5f);
+
+
 
 	//gfx.DrawRect((player.centerBotLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue);
 

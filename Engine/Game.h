@@ -65,13 +65,17 @@ private:
 
 
 
-	Vec2 planetLoc{ -200.0f, 200.0f };
+	Vec2 planetLoc{ -400.0f, 200.0f };
 	float planetRadius = 240.0f;
 	float planetZ = 2.0f;
 
-	Vec2 moonLoc{ -200.0f, 200.0f };
-	float moonRadius = 24.0f;
+	Vec2 moonLoc{ -400.0f, 200.0f };
+	float moonRadius = 48.0f;
 	float moonZ = 1.0f; // -> 1.4f
 	float moonAngleToPlanet = 0.0f;
+
+	Vec2 planet1Loc{ -300.0f, -400.0f };
+	float planet1Radius = 100.0f;
+	float planet1Z = 0.1f;
 
 };
