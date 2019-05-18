@@ -23,6 +23,9 @@
 #include "Keyboard.h"
 #include "Mouse.h"
 #include "Graphics.h"
+#include "Camera.h"
+#include "Player.h"
+#include "World.h"
 
 class Game
 {
@@ -34,6 +37,7 @@ public:
 private:
 	void ComposeFrame();
 	void UpdateModel();
+	void ProcessInput();
 	/********************************/
 	/*  User Functions              */
 	/********************************/
@@ -43,4 +47,9 @@ private:
 	/********************************/
 	/*  User Variables              */
 	/********************************/
+
+	Camera camera;
+	Player player;
+	World world;
+
 };

@@ -60,14 +60,14 @@ struct Vec2
 		return x * x + y * y;
 	}
 
-	float GetVec2Magnitude()
+	float GetMagnitude()
 	{
 		return sqrt(GetMagnitudeSqrd());
 	}
 
 	Vec2 GetNormalized()
 	{
-		float magnitude = GetVec2Magnitude();
+		float magnitude = GetMagnitude();
 		if (magnitude > 0.0f)
 		{
 			return Vec2(x / magnitude, y / magnitude);
