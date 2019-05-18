@@ -28,7 +28,7 @@ Game::Game( MainWindow& wnd )
 {
 	for (int i = 0; i < 10000; i++)
 	{
-		starmap.push_back(Star{ Vec2((float)(rand() % 4001) - 2000, (float)(rand() % 4001) - 2000), (float)(rand() % 5), Color{ (unsigned char)(rand() % 256), (unsigned char)(rand() % 256), (unsigned char)(rand() % 256) } });
+		starmap.push_back(Star{ Vec2((float)(rand() % 4001) - 2000, (float)(rand() % 4001) - 2000), (float)(rand() % 3 + 1), Color{ (unsigned char)(rand() % 256), (unsigned char)(rand() % 256), (unsigned char)(rand() % 256) } });
 	}
 	
 }
@@ -63,6 +63,16 @@ void Game::ProcessInput()
 		player.velocity = player.velocity + Vec2{ 0.02f, 0.0f } * playerRotation;
 	}
 
+
+	if (wnd.kbd.KeyIsPressed(VK_SPACE))
+	{
+		if (player.centerBotLoc.GetMagnitude() - world.radius < 10.0f)
+		{
+			plants.push_back(Plant(player.centerBotLoc.GetNormalized() * world.radius, PLANT_TYPE_CARBONEATER, plants.size()));
+		}
+		
+	}
+
 }
 
 void Game::UpdateModel()
@@ -84,19 +94,23 @@ void Game::UpdateModel()
 	}
 	else
 	{
-		player.velocity = { 0.0f, 0.0f };
+		Vec2 normal = player.centerBotLoc / world.radius;
+		player.velocity = player.velocity - normal * 2.0f * (player.velocity.Dot(normal));
 	}
 
-	if (!((newPosition + Vec2{ 0.0f, player.height } - domeLoc).GetMagnitudeSqrd() > (domeRadius * domeRadius)))
+	if (!((newPosition- dome.loc).GetMagnitudeSqrd() > (dome.radius * dome.radius))) // + Vec2{ 0.0f, player.height } 
 	{
 		player.centerBotLoc = newPosition;
 	}
 	else
 	{
-		player.velocity = { 0.0f, -player.velocity.y };
+		Vec2 normal = player.centerBotLoc / dome.radius;
+		player.velocity = player.velocity - normal * 2.0f * (player.velocity.Dot(normal));
 	}
 
-	camera.loc = player.centerBotLoc + Vec2(0.0f, (float)player.height / 2.0f);
+	Vec2 newCameraLoc = player.centerBotLoc + Vec2(0.0f, 0.0f); //(float)player.height / 2.0f
+	float cameraSmoothing = 1.0f;
+	camera.loc = camera.loc * (1.0f - cameraSmoothing) + newCameraLoc * cameraSmoothing;
 
 	player.angle = 0.0f;
 
@@ -105,7 +119,33 @@ void Game::UpdateModel()
 
 	player.angle = acosf(yUpNormalized.Dot(playerLocNormalized)) * (player.centerBotLoc.x >= 0.0f ? 1.0f : -1.0f);
 
-	camera.angle = player.angle;
+	camera.angle = acosf(yUpNormalized.Dot(camera.loc.GetNormalized())) * (camera.loc.x >= 0.0f ? 1.0f : -1.0f);
+
+	//camera.angle = player.angle;
+
+
+
+	player.Breathe(&dome.atmosphere);
+
+	for (int i = 0; i < plants.size(); i++)
+	{
+		if (plants[i].CanBreathe(&dome.atmosphere))
+		{
+			plants[i].Breathe(&dome.atmosphere);
+		}
+		else
+		{
+			std::swap(plants.begin() + i, plants.end() - 1);
+			plants.pop_back();
+			i--;
+		}
+	}
+
+	std::sort(plants.begin(), plants.end());
+	for (int i = 0; i < plants.size(); i++)
+	{
+		plants[i].ID = i;
+	}
 
 }
 
@@ -113,8 +153,8 @@ void Game::ComposeFrame()
 {
 	moonAngleToPlanet += 0.001f;
 
-	moonLoc.x = -800.0f + cos(moonAngleToPlanet) * 400.0f;
-	moonZ = 1.0f + sin(moonAngleToPlanet) * 0.4f;
+	moonLoc.x = -200.0f + cos(moonAngleToPlanet) * 400.0f;
+	moonZ = 1.0f + (sin(moonAngleToPlanet) + 1.0f);
 
 	Vec2 screenTransformFlip{ 1.0f,-1.0f };
 	Vec2 screenTransformShift{ (float)(gfx.ScreenWidth / 2),(float)(gfx.ScreenHeight / 2) };
@@ -123,23 +163,34 @@ void Game::ComposeFrame()
 
 	for (int i = 0; i < starmap.size(); i++)
 	{
-		gfx.DrawCircle(((starmap[i].loc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, starmap[i].radius, starmap[i].color);
+		gfx.DrawCircle(((starmap[i].loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, starmap[i].radius, starmap[i].color);
 	}
 
 	if (moonZ >= planetZ)
 	{
-		gfx.DrawCircle(((moonLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, moonRadius / moonZ, Colors::Gray);
-		gfx.DrawCircle(((planetLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, planetRadius, Colors::Green);
+		gfx.DrawCircle(((moonLoc - camera.loc / (1000.0f * moonZ)) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, moonRadius / moonZ, Colors::Gray);
+		gfx.DrawCircle(((planetLoc - camera.loc / (1000.0f * planetZ)) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, planetRadius, Colors::Green);
 	}
 	else
 	{
-		gfx.DrawCircle(((planetLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, planetRadius, Colors::Green);
-		gfx.DrawCircle(((moonLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, moonRadius / moonZ, Colors::Gray);
+		gfx.DrawCircle(((planetLoc - camera.loc / (1000.0f * moonZ)) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, planetRadius, Colors::Green);
+		gfx.DrawCircle(((moonLoc - camera.loc / (1000.0f * planetZ)) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, moonRadius / moonZ, Colors::Gray);
 	}
 
-	gfx.DrawCircle(((domeLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, domeRadius, Colors::LightGray, 0.2f);
-	gfx.DrawCircle(((world.loc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, world.radius, Colors::Gray);
+	gfx.DrawCircleWithIncreasingAlphaToEdge(((dome.loc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, dome.radius, dome.GetAtmosphereCombinedColor(), world.radius, 0.1f, 0.5f);
 
-	gfx.DrawRect((player.centerBotLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue);
+	//gfx.DrawRect((player.centerBotLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue);
+
+	for (int i = 0; i < plants.size(); i++)
+	{
+		gfx.DrawCircle(((plants[i].centerBotLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, plants[i].currentSize, Colors::Green);
+	}
+
+	gfx.DrawCircle((player.centerBotLoc + player.transformShiftCircle - camera.loc) * screenTransformFlip + screenTransformShift, 2.0f, Colors::Red);
+
+
+	gfx.DrawCircleWithIncreasingAlphaToEdge(((dome.loc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, dome.radius, dome.GetAtmosphereCombinedColor(), world.radius, 0.1f, 0.5f);
+
+	gfx.DrawCircle(((world.loc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, world.radius, Colors::Gray);
 
 }

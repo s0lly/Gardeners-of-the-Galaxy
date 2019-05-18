@@ -117,6 +117,45 @@ public:
 		}
 	}
 
+	void DrawCircleWithIncreasingAlphaToEdge(Vec2 loc, float radius, Color c, float startEdge, float startAlpha, float endAlpha = 1.0f)
+	{
+		// Initial calculations ensure that only thevisible part of each circle is drawn
+
+		int left = (int)(loc.x - radius);
+		left = left < 0 ? 0 : left;
+
+		int right = (int)(loc.x + radius) + 1;
+		right = right >= ScreenWidth ? ScreenWidth : right;
+
+		int top = (int)(loc.y - radius);
+		top = top < 0 ? 0 : top;
+
+		int bottom = (int)(loc.y + radius) + 1;
+		bottom = bottom >= ScreenHeight ? ScreenHeight : bottom;
+
+		float radiusSqrd = radius * radius;
+		float innerRadiusSqrd = startEdge * startEdge;
+
+		for (int j = top; j < bottom; j++)
+		{
+			float distSqrdY = ((float)j - loc.y) * ((float)j - loc.y);
+
+			for (int i = left; i < right; i++)
+			{
+				float distSqrdX = ((float)i - loc.x) * ((float)i - loc.x);
+				float distSqrdTotal = distSqrdX + distSqrdY;
+
+				if (distSqrdTotal < radiusSqrd && distSqrdTotal >= innerRadiusSqrd)
+				{
+					float distTotal = sqrt(distSqrdTotal);
+					float check = (distTotal - startEdge) / (radius - startEdge);
+					float newAlpha = startAlpha + ((sqrt(distSqrdTotal) - startEdge) / (radius - startEdge)) * (endAlpha - startAlpha);
+					PutPixelWithAlphaBlend(i, j, c, newAlpha);
+				}
+			}
+		}
+	}
+
 	~Graphics();
 private:
 	Microsoft::WRL::ComPtr<IDXGISwapChain>				pSwapChain;

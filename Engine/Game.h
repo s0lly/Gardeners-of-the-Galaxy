@@ -27,6 +27,8 @@
 #include "Player.h"
 #include "World.h"
 #include "Star.h"
+#include "Dome.h"
+#include "Plant.h"
 #include <vector>
 
 class Game
@@ -56,15 +58,18 @@ private:
 
 	std::vector<Star> starmap;
 
-	Vec2 domeLoc{ 0.0f, 0.0f };
-	float domeRadius = 1000.0f;
+	Dome dome;
 
-	Vec2 planetLoc{ -800.0f, 800.0f };
+	std::vector<Plant> plants;
+
+
+
+
+	Vec2 planetLoc{ -200.0f, 200.0f };
 	float planetRadius = 240.0f;
-	float planetZ = 1.2f;
+	float planetZ = 2.0f;
 
-
-	Vec2 moonLoc{ -800.0f, 800.0f };
+	Vec2 moonLoc{ -200.0f, 200.0f };
 	float moonRadius = 24.0f;
 	float moonZ = 1.0f; // -> 1.4f
 	float moonAngleToPlanet = 0.0f;
