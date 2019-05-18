@@ -26,6 +26,11 @@ Game::Game( MainWindow& wnd )
 	wnd( wnd ),
 	gfx( wnd )
 {
+	for (int i = 0; i < 10000; i++)
+	{
+		starmap.push_back(Star{ Vec2((float)(rand() % 4001) - 2000, (float)(rand() % 4001) - 2000), (float)(rand() % 5), Color{ (unsigned char)(rand() % 256), (unsigned char)(rand() % 256), (unsigned char)(rand() % 256) } });
+	}
+	
 }
 
 void Game::Go()
@@ -122,8 +127,13 @@ void Game::ComposeFrame()
 
 	Mat2 cameraRotation = Mat2::RotationMatrix(camera.angle);
 
-	gfx.DrawCircle(((planetLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, planetRadius, Colors::Blue);
-	gfx.DrawCircle(((domeLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, domeRadius, Colors::LightGray, 0.5f);
+	for (int i = 0; i < starmap.size(); i++)
+	{
+		gfx.DrawCircle(((starmap[i].loc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, starmap[i].radius, starmap[i].color);
+	}
+
+	gfx.DrawCircle(((planetLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, planetRadius, Colors::Green);
+	gfx.DrawCircle(((domeLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, domeRadius, Colors::LightGray, 0.2f);
 	gfx.DrawCircle(((world.loc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, world.radius, Colors::Gray);
 
 	gfx.DrawRect((player.centerBotLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue);

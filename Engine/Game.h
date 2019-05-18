@@ -26,6 +26,8 @@
 #include "Camera.h"
 #include "Player.h"
 #include "World.h"
+#include "Star.h"
+#include <vector>
 
 class Game
 {
@@ -51,5 +53,7 @@ private:
 	Camera camera;
 	Player player;
 	World world;
+
+	std::vector<Star> starmap;
 
 };
