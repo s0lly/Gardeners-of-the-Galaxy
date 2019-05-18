@@ -98,13 +98,13 @@ void Game::UpdateModel()
 		player.velocity = player.velocity - normal * 2.0f * (player.velocity.Dot(normal));
 	}
 
-	if (!((newPosition- dome.loc).GetMagnitudeSqrd() > (dome.radius * dome.radius))) // + Vec2{ 0.0f, player.height } 
+	if (!((newPosition + Vec2{ player.height * sin(player.angle), player.height * cos(player.angle) } - dome.loc).GetMagnitudeSqrd() > (dome.radius * dome.radius)))
 	{
 		player.centerBotLoc = newPosition;
 	}
 	else
 	{
-		Vec2 normal = player.centerBotLoc / dome.radius;
+		Vec2 normal = player.centerBotLoc / (dome.radius - player.height);
 		player.velocity = player.velocity - normal * 2.0f * (player.velocity.Dot(normal));
 	}
 
@@ -153,7 +153,7 @@ void Game::ComposeFrame()
 {
 	moonAngleToPlanet += 0.001f;
 
-	moonLoc.x = -400.0f + cos(moonAngleToPlanet) * 400.0f;
+	moonLoc.x = -500.0f + cos(moonAngleToPlanet) * 400.0f;
 	moonZ = 1.0f + (sin(moonAngleToPlanet) + 1.0f);
 
 	Vec2 screenTransformFlip{ 1.0f,-1.0f };
@@ -185,14 +185,15 @@ void Game::ComposeFrame()
 
 
 
-	//gfx.DrawRect((player.centerBotLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue);
-
+	
 	for (int i = 0; i < plants.size(); i++)
 	{
 		gfx.DrawCircle(((plants[i].centerBotLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, plants[i].currentSize, Colors::Green);
 	}
 
-	gfx.DrawCircle((player.centerBotLoc + player.transformShiftCircle - camera.loc) * screenTransformFlip + screenTransformShift, 2.0f, Colors::Red);
+	gfx.DrawRect((player.centerBotLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue);
+
+	//gfx.DrawCircle((player.centerBotLoc + player.transformShiftCircle - camera.loc) * screenTransformFlip + screenTransformShift, 2.0f, Colors::Red);
 
 
 	gfx.DrawCircleWithIncreasingAlphaToEdge(((dome.loc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, dome.radius, dome.GetAtmosphereCombinedColor(), world.radius, 0.1f, 0.5f);
