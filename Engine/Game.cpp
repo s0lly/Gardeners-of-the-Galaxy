@@ -67,9 +67,6 @@ void Game::ProcessInput()
 
 void Game::UpdateModel()
 {
-	Vec2 domeLoc{ 0.0f, 0.0f };
-	float domeRadius = 1000.0f;
-
 	float gravityAccelerationMagnitude = 0.01f;
 
 	Vec2 vectorFromPlayerToWorld = (world.loc - player.centerBotLoc);
@@ -114,13 +111,10 @@ void Game::UpdateModel()
 
 void Game::ComposeFrame()
 {
+	moonAngleToPlanet += 0.001f;
 
-	Vec2 domeLoc{ 0.0f, 0.0f };
-	float domeRadius = 1000.0f;
-
-	Vec2 planetLoc{ -800.0f, 800.0f };
-	float planetRadius = 240.0f;
-
+	moonLoc.x = -800.0f + cos(moonAngleToPlanet) * 400.0f;
+	moonZ = 1.0f + sin(moonAngleToPlanet) * 0.4f;
 
 	Vec2 screenTransformFlip{ 1.0f,-1.0f };
 	Vec2 screenTransformShift{ (float)(gfx.ScreenWidth / 2),(float)(gfx.ScreenHeight / 2) };
@@ -132,7 +126,17 @@ void Game::ComposeFrame()
 		gfx.DrawCircle(((starmap[i].loc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, starmap[i].radius, starmap[i].color);
 	}
 
-	gfx.DrawCircle(((planetLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, planetRadius, Colors::Green);
+	if (moonZ >= planetZ)
+	{
+		gfx.DrawCircle(((moonLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, moonRadius / moonZ, Colors::Gray);
+		gfx.DrawCircle(((planetLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, planetRadius, Colors::Green);
+	}
+	else
+	{
+		gfx.DrawCircle(((planetLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, planetRadius, Colors::Green);
+		gfx.DrawCircle(((moonLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, moonRadius / moonZ, Colors::Gray);
+	}
+
 	gfx.DrawCircle(((domeLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, domeRadius, Colors::LightGray, 0.2f);
 	gfx.DrawCircle(((world.loc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, world.radius, Colors::Gray);
 

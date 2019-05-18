@@ -56,4 +56,17 @@ private:
 
 	std::vector<Star> starmap;
 
+	Vec2 domeLoc{ 0.0f, 0.0f };
+	float domeRadius = 1000.0f;
+
+	Vec2 planetLoc{ -800.0f, 800.0f };
+	float planetRadius = 240.0f;
+	float planetZ = 1.2f;
+
+
+	Vec2 moonLoc{ -800.0f, 800.0f };
+	float moonRadius = 24.0f;
+	float moonZ = 1.0f; // -> 1.4f
+	float moonAngleToPlanet = 0.0f;
+
 };
