@@ -146,6 +146,7 @@
     <ClInclude Include="Game.h" />
     <ClInclude Include="Atmosphere.h" />
     <ClInclude Include="Graphics.h" />
+    <ClInclude Include="Habitat.h" />
     <ClInclude Include="Keyboard.h" />
     <ClInclude Include="MainWindow.h" />
     <ClInclude Include="Mouse.h" />

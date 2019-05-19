@@ -72,11 +72,34 @@ public:
 	{
 		for (int j = (int)loc.y; j < (int)loc.y + height; j++)
 		{
-			for (int i = (int)loc.x; i < (int)loc.x + length; i++)
+			if (j >= 0 && j < ScreenHeight)
 			{
-				if (i >= 0 && i < ScreenWidth)
+				for (int i = (int)loc.x; i < (int)loc.x + length; i++)
 				{
-					PutPixel(i, j, c);
+					if (i >= 0 && i < ScreenWidth)
+					{
+						PutPixel(i, j, c);
+					}
+				}
+			}
+		}
+	}
+
+	void DrawRectWithinCircle(Vec2 loc, int length, int height, Color c, Vec2 circleLoc, float circleRadius)
+	{
+		for (int j = (int)loc.y; j < (int)loc.y + height; j++)
+		{
+			if (j >= 0 && j < ScreenHeight)
+			{
+				for (int i = (int)loc.x; i < (int)loc.x + length; i++)
+				{
+					if (i >= 0 && i < ScreenWidth)
+					{
+						if ((Vec2((float)i, (float)j) - circleLoc).GetMagnitudeSqrd() < (circleRadius * circleRadius))
+						{
+							PutPixel(i, j, c);
+						}	
+					}
 				}
 			}
 		}
@@ -110,6 +133,46 @@ public:
 				float distSqrdTotal = distSqrdX + distSqrdY;
 
 				if (distSqrdTotal < radiusSqrd)
+				{
+					PutPixelWithAlphaBlend(i, j, c, alpha);
+				}
+			}
+		}
+	}
+
+	void DrawEllipse(Vec2 loc, float radiusWidth, float radiusHeight, Color c, float alpha = 1.0f) // Not working yet!!
+	{
+		// Initial calculations ensure that only thevisible part of each circle is drawn
+
+		int left = (int)(loc.x - radiusWidth);
+		left = left < 0 ? 0 : left;
+
+		int right = (int)(loc.x + radiusWidth) + 1;
+		right = right >= ScreenWidth ? ScreenWidth : right;
+
+		int top = (int)(loc.y - radiusHeight);
+		top = top < 0 ? 0 : top;
+
+		int bottom = (int)(loc.y + radiusHeight) + 1;
+		bottom = bottom >= ScreenHeight ? ScreenHeight : bottom;
+
+		//float radiusSqrd = radius * radius;
+
+		for (int j = top; j < bottom; j++)
+		{
+			float distSqrdY = ((float)j - loc.y) * ((float)j - loc.y);
+
+			for (int i = left; i < right; i++)
+			{
+				float distSqrdX = ((float)i - loc.x) * ((float)i - loc.x);
+				float distSqrdTotal = distSqrdX + distSqrdY;
+
+				float distanceOfPointToCenterSqrd = Vec2((float)i - loc.x, (float)j - loc.y).GetMagnitudeSqrd();
+
+				float radiusAtPoint = (distSqrdX / distanceOfPointToCenterSqrd) * radiusWidth +
+					(distSqrdY / distanceOfPointToCenterSqrd) * radiusHeight;
+
+				if (distSqrdTotal < (radiusAtPoint * radiusAtPoint))
 				{
 					PutPixelWithAlphaBlend(i, j, c, alpha);
 				}

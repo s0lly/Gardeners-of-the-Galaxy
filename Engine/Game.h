@@ -29,6 +29,7 @@
 #include "Star.h"
 #include "Dome.h"
 #include "Plant.h"
+#include "Habitat.h"
 #include <vector>
 
 class Game
@@ -37,7 +38,7 @@ public:
 	Game( class MainWindow& wnd );
 	Game( const Game& ) = delete;
 	Game& operator=( const Game& ) = delete;
-	void Go();
+	bool Go();
 private:
 	void ComposeFrame();
 	void UpdateModel();
@@ -60,9 +61,11 @@ private:
 
 	Dome dome;
 
+	Habitat habitat;
+
 	std::vector<Plant> plants;
 
-
+	bool gameOver = false;
 
 
 	Vec2 planetLoc{ -500.0f, 50.0f };

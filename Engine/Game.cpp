@@ -33,45 +33,64 @@ Game::Game( MainWindow& wnd )
 	
 }
 
-void Game::Go()
+bool Game::Go()
 {
 	gfx.BeginFrame();	
 	ProcessInput();
 	UpdateModel();
 	ComposeFrame();
 	gfx.EndFrame();
+
+	return gameOver;
 }
 
 void Game::ProcessInput()
 {
+
 	Mat2 playerRotation = Mat2::RotationMatrix(player.angle);
 
-	if (wnd.kbd.KeyIsPressed('W'))
+	if (!player.isSleeping)
 	{
-		player.velocity = player.velocity + Vec2{0.0f, 0.02f } * playerRotation;
-	}
-	if (wnd.kbd.KeyIsPressed('S'))
-	{
-		player.velocity = player.velocity + Vec2{ 0.0f, -0.02f } * playerRotation;
-	}
-	if (wnd.kbd.KeyIsPressed('A'))
-	{
-		player.velocity = player.velocity + Vec2{ -0.02f, 0.0f } * playerRotation;
-	}
-	if (wnd.kbd.KeyIsPressed('D'))
-	{
-		player.velocity = player.velocity + Vec2{ 0.02f, 0.0f } * playerRotation;
-	}
-
-
-	if (wnd.kbd.KeyIsPressed(VK_SPACE))
-	{
-		if (player.centerBotLoc.GetMagnitude() - world.radius < 10.0f)
+		if (wnd.kbd.KeyIsPressed('W'))
 		{
-			plants.push_back(Plant(player.centerBotLoc.GetNormalized() * world.radius, PLANT_TYPE_CARBONEATER, plants.size()));
+			player.velocity = player.velocity + Vec2{ 0.0f, 0.02f } *playerRotation * (player.energy / player.maxEnergy);
+			player.ExpendEnergy(0.01f);
 		}
-		
+		if (wnd.kbd.KeyIsPressed('S'))
+		{
+			player.velocity = player.velocity + Vec2{ 0.0f, -0.02f } *playerRotation * (player.energy / player.maxEnergy);
+			player.ExpendEnergy(0.01f);
+		}
+		if (wnd.kbd.KeyIsPressed('A'))
+		{
+			player.velocity = player.velocity + Vec2{ -0.02f, 0.0f } *playerRotation * (player.energy / player.maxEnergy);
+			player.ExpendEnergy(0.01f);
+		}
+		if (wnd.kbd.KeyIsPressed('D'))
+		{
+			player.velocity = player.velocity + Vec2{ 0.02f, 0.0f } *playerRotation * (player.energy / player.maxEnergy);
+			player.ExpendEnergy(0.01f);
+		}
+
+
+		if (wnd.kbd.KeyIsPressed(VK_SPACE))
+		{
+			if (player.centerBotLoc.GetMagnitude() - world.radius < 10.0f)
+			{
+				plants.push_back(Plant(player.centerBotLoc.GetNormalized() * world.radius, PLANT_TYPE_CARBONEATER, plants.size()));
+			}
+		}
+
+
+		if (wnd.kbd.KeyIsPressed(VK_RETURN))
+		{
+			if ((player.centerBotLoc - habitat.doorLoc).GetMagnitude() < 20.0f)
+			{
+				player.isSleeping = true;
+			}
+		}
 	}
+	
 
 }
 
@@ -147,6 +166,31 @@ void Game::UpdateModel()
 		plants[i].ID = i;
 	}
 
+	if (!player.isSleeping)
+	{
+		player.ExpendEnergy(0.01f);
+	}
+	else
+	{
+		player.Sleep();
+		if (player.isSleeping)
+		{
+			player.centerBotLoc = Vec2(-830.0f, -60.0f);
+			player.velocity = Vec2(0.0f, 0.0f);
+		}
+		else
+		{
+			player.centerBotLoc = habitat.doorLoc;
+		}
+		
+	}
+	
+
+	if (!player.isAlive)
+	{
+		gameOver = true;
+	}
+
 }
 
 void Game::ComposeFrame()
@@ -191,9 +235,25 @@ void Game::ComposeFrame()
 		gfx.DrawCircle(((plants[i].centerBotLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, plants[i].currentSize, Colors::Green);
 	}
 
-	gfx.DrawRect((player.centerBotLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue);
 
+	
+
+	gfx.DrawCircle(((habitat.hutLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, habitat.hutHeightRadius, habitat.hutColor);
+	gfx.DrawCircle(((habitat.doorLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, habitat.doorHeightRadius, habitat.doorColor);
+	if (player.isSleeping)
+	{
+		gfx.DrawRectWithinCircle((player.centerBotLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue, ((habitat.windowLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, habitat.windowRadius);
+	}
+	gfx.DrawCircle(((habitat.windowLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, habitat.windowRadius, habitat.windowColor, 0.5f);
+
+
+	if (!player.isSleeping)
+	{
+		gfx.DrawRect((player.centerBotLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue);
+	}
 	//gfx.DrawCircle((player.centerBotLoc + player.transformShiftCircle - camera.loc) * screenTransformFlip + screenTransformShift, 2.0f, Colors::Red);
+
+
 
 
 	gfx.DrawCircleWithIncreasingAlphaToEdge(((dome.loc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, dome.radius, dome.GetAtmosphereCombinedColor(), world.radius, 0.1f, 0.5f);

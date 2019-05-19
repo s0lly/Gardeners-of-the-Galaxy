@@ -29,10 +29,11 @@ int WINAPI wWinMain( HINSTANCE hInst,HINSTANCE,LPWSTR pArgs,INT )
 		MainWindow wnd( hInst,pArgs );		
 		try
 		{
+			bool gameOver = false;
 			Game theGame( wnd );
-			while( wnd.ProcessMessage() )
+			while (wnd.ProcessMessage() && !gameOver)
 			{
-				theGame.Go();
+				gameOver = theGame.Go();
 			}
 		}
 		catch( const ChiliException& e )
