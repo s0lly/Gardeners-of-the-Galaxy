@@ -47,7 +47,7 @@ struct Plant
 
 			widthToHeight = 0.1f;
 
-			maxFoodValue = 10.0f;
+			maxFoodValue = 100.0f;
 
 			maxCutAmount = 500.0f;
 		}break;

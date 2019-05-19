@@ -100,6 +100,15 @@ void Game::ProcessInput()
 		{
 			player.isCutting = false;
 		}
+
+		if (wnd.kbd.KeyIsPressed(VK_SHIFT))
+		{
+			if (player.centerBotLoc.GetMagnitude() - world.radius < 10.0f)
+			{
+				plants.push_back(Plant(player.centerBotLoc.GetNormalized() * world.radius, PLANT_TYPE_BIGCARBONEATER, plants.size()));
+			}
+		}
+
 	}
 	
 
@@ -146,7 +155,7 @@ void Game::UpdateModel()
 		Vec2 cuttingLocation = player.centerBotLoc + (player.isFacingRight ? Vec2(40.0f, 10.0f) : Vec2(-40.0f, 10.0f)) * Mat2::RotationMatrix(player.angle);
 		for (int i = 0; i < plants.size(); i++)
 		{
-			if ((cuttingLocation - (plants[i].centerBotLoc)).GetMagnitude() < (plants[i].currentSize + 5.0f))
+			if ((cuttingLocation - (plants[i].centerBotLoc)).GetMagnitude() < (plants[i].currentSize + 15.0f))
 			{
 				if (!plants[i].isBeingCut)
 				{
@@ -216,7 +225,7 @@ void Game::UpdateModel()
 		}
 		else
 		{
-			plants[i].isDead = true;
+			//plants[i].isDead = true;
 		}
 	}
 
@@ -368,7 +377,7 @@ void Game::ComposeFrame()
 		Vec2 cuttingLocation = player.centerBotLoc + (player.isFacingRight ? Vec2(40.0f, 10.0f) : Vec2(-40.0f, 10.0f)) * Mat2::RotationMatrix(player.angle);
 
 		Vec2 axeHitLoc = player.isFacingRight ? Vec2(40.0f, 10.0f) : Vec2(-40.0f, 10.0f);
-		gfx.DrawCircle((cuttingLocation - camera.loc) * cameraRotation.GetTranspose() * screenTransformFlip + screenTransformShift, 5.0f, Colors::Red);
+		gfx.DrawCircle((cuttingLocation - camera.loc) * cameraRotation.GetTranspose() * screenTransformFlip + screenTransformShift, 15.0f, Colors::Red);
 	}
 
 
