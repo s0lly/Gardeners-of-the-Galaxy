@@ -31,6 +31,7 @@
 #include "Plant.h"
 #include "Habitat.h"
 #include "Spaceship.h"
+#include "RetroContent.h"
 #include <vector>
 
 class Game

@@ -10,5 +10,6 @@ struct Spaceship
 	Color color = Colors::Magenta;
 	float zLoc = 1810.0f;
 	float zChange = 1.0f;
-	bool hasArrived = false;;
+	bool hasArrived = false;
+	float arrivalTime = 30.0f;
 };

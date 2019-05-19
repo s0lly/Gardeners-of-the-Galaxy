@@ -265,7 +265,7 @@ void Game::ComposeFrame()
 	{
 		gfx.DrawRectWithinCircle((player.centerBotLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue, ((habitat.windowLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, habitat.windowRadius);
 	}
-	gfx.DrawCircle(((habitat.windowLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, habitat.windowRadius, habitat.windowColor, 0.5f);
+	gfx.DrawCircle(((habitat.windowLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, habitat.windowRadius, habitat.windowColor, 0.75f);
 
 
 	if (!player.isSleeping)
@@ -281,4 +281,34 @@ void Game::ComposeFrame()
 
 	gfx.DrawCircle(((world.loc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, world.radius, Colors::Gray);
 
+
+	// GUI
+
+	if (spaceship.arrivalTime > 0)
+	{
+		spaceship.arrivalTime -= ((spaceship.zChange / 5.0f) / 60.0f);
+	}
+	else
+	{
+		spaceship.arrivalTime = 0;
+	}
+	
+
+	int arrivalTimeMin = (int)spaceship.arrivalTime;
+	int arrivalTimeSec = (int)((spaceship.arrivalTime - (float)arrivalTimeMin) * 60.0f);
+
+	RetroContent::DrawString(gfx, std::string("STARSHIP ARRIVAL"), { 1175.0f, 50.0f }, 2, Colors::White);
+	RetroContent::DrawString(gfx, std::to_string(arrivalTimeMin) + " MIN  " + std::to_string(arrivalTimeSec) + " SEC", { 1425.0f, 50.0f }, 2, Colors::White);
+
+	RetroContent::DrawString(gfx, std::string("OXYGEN LEVEL"), { 1375.0f, 100.0f }, 2, dome.atmosphere.oxygenColor);
+	RetroContent::DrawString(gfx, std::to_string((int)(dome.atmosphere.oxygenLevel + 0.5f)) + "%", { 1525.0f, 100.0f }, 2, dome.atmosphere.oxygenColor);
+
+	RetroContent::DrawString(gfx, std::string("CO2 LEVEL"), { 1375.0f, 150.0f }, 2, dome.atmosphere.carbonDioxideColor);
+	RetroContent::DrawString(gfx, std::to_string((int)(dome.atmosphere.carbonDioxideLevel + 0.5f)) + "%", { 1525.0f, 150.0f }, 2, dome.atmosphere.carbonDioxideColor);
+	
+	RetroContent::DrawString(gfx, std::string("ENERGY LEVEL"), { 1375.0f, 200.0f }, 2, Colors::Cyan);
+	RetroContent::DrawString(gfx, std::to_string((int)(player.energy + 0.5f)) + "%", { 1525.0f, 200.0f }, 2, Colors::Cyan);
+
+	RetroContent::DrawString(gfx, std::string("FOOD PRODUCED"), { 1375.0f, 250.0f }, 2, Colors::Red);
+	RetroContent::DrawString(gfx, std::to_string((int)(0)) + "%", { 1525.0f, 250.0f }, 2, Colors::Red);
 }
