@@ -127,18 +127,7 @@ void Game::UpdateModel()
 		player.velocity = player.velocity - normal * 2.0f * (player.velocity.Dot(normal));
 	}
 
-	Vec2 newCameraLoc = player.centerBotLoc + Vec2(0.0f, 0.0f); //(float)player.height / 2.0f
-	float cameraSmoothing = 1.0f;
-	camera.loc = camera.loc * (1.0f - cameraSmoothing) + newCameraLoc * cameraSmoothing;
 
-	player.angle = 0.0f;
-
-	Vec2 yUpNormalized{ 0.0f, 1.0f };
-	Vec2 playerLocNormalized = player.centerBotLoc.GetNormalized();
-
-	player.angle = acosf(yUpNormalized.Dot(playerLocNormalized)) * (player.centerBotLoc.x >= 0.0f ? 1.0f : -1.0f);
-
-	camera.angle = acosf(yUpNormalized.Dot(camera.loc.GetNormalized())) * (camera.loc.x >= 0.0f ? 1.0f : -1.0f);
 
 	//camera.angle = player.angle;
 
@@ -190,6 +179,23 @@ void Game::UpdateModel()
 	{
 		gameOver = true;
 	}
+
+
+
+
+
+	Vec2 newCameraLoc = player.centerBotLoc + Vec2(0.0f, 0.0f); //(float)player.height / 2.0f
+	float cameraSmoothing = 1.0f;
+	camera.loc = camera.loc * (1.0f - cameraSmoothing) + newCameraLoc * cameraSmoothing;
+
+	player.angle = 0.0f;
+
+	Vec2 yUpNormalized{ 0.0f, 1.0f };
+	Vec2 playerLocNormalized = player.centerBotLoc.GetNormalized();
+
+	player.angle = acosf(yUpNormalized.Dot(playerLocNormalized)) * (player.centerBotLoc.x >= 0.0f ? 1.0f : -1.0f);
+
+	camera.angle = acosf(yUpNormalized.Dot(camera.loc.GetNormalized())) * (camera.loc.x >= 0.0f ? 1.0f : -1.0f);
 
 }
 
