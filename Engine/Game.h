@@ -30,6 +30,7 @@
 #include "Dome.h"
 #include "Plant.h"
 #include "Habitat.h"
+#include "Spaceship.h"
 #include <vector>
 
 class Game
@@ -62,6 +63,8 @@ private:
 	Dome dome;
 
 	Habitat habitat;
+
+	Spaceship spaceship;
 
 	std::vector<Plant> plants;
 

@@ -197,6 +197,21 @@ void Game::UpdateModel()
 
 	camera.angle = acosf(yUpNormalized.Dot(camera.loc.GetNormalized())) * (camera.loc.x >= 0.0f ? 1.0f : -1.0f);
 
+	if (spaceship.zLoc > 19.0f)
+	{
+		spaceship.zLoc -= spaceship.zChange / 5.0f;
+	}
+	else if (spaceship.zLoc > 10.0f)
+	{
+		spaceship.zChange *= 0.97914836f;
+		spaceship.zLoc -= spaceship.zChange / 5.0f;
+	}
+	else
+	{
+		spaceship.hasArrived = true;
+	}
+	
+
 }
 
 void Game::ComposeFrame()
@@ -229,7 +244,7 @@ void Game::ComposeFrame()
 		gfx.DrawCircle(((moonLoc - camera.loc / (1000.0f * moonZ)) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, moonRadius / moonZ, Colors::Gray);
 	}
 
-
+	gfx.DrawCircle(((spaceship.loc - camera.loc / (spaceship.zLoc)) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, spaceship.radius / spaceship.zLoc, spaceship.color);
 
 	gfx.DrawCircleWithIncreasingAlphaToEdge(((dome.loc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, dome.radius, dome.GetAtmosphereCombinedColor(), world.radius, 0.1f, 0.5f);
 
