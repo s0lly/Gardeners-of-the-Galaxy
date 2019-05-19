@@ -65,11 +65,13 @@ void Game::ProcessInput()
 		{
 			player.velocity = player.velocity + Vec2{ -0.02f, 0.0f } *playerRotation * (player.energy / player.maxEnergy);
 			player.ExpendEnergy(0.01f);
+			player.isFacingRight = false;
 		}
 		if (wnd.kbd.KeyIsPressed('D'))
 		{
 			player.velocity = player.velocity + Vec2{ 0.02f, 0.0f } *playerRotation * (player.energy / player.maxEnergy);
 			player.ExpendEnergy(0.01f);
+			player.isFacingRight = true;
 		}
 
 
@@ -88,6 +90,15 @@ void Game::ProcessInput()
 			{
 				player.isSleeping = true;
 			}
+		}
+
+		if (wnd.kbd.KeyIsPressed(VK_CONTROL))
+		{
+			player.isCutting = true;
+		}
+		else
+		{
+			player.isCutting = false;
 		}
 	}
 	
@@ -128,22 +139,95 @@ void Game::UpdateModel()
 	}
 
 
+	// player cutting applied to plants
 
-	//camera.angle = player.angle;
+	if (player.isCutting)
+	{
+		Vec2 cuttingLocation = player.centerBotLoc + (player.isFacingRight ? Vec2(40.0f, 10.0f) : Vec2(-40.0f, 10.0f)) * Mat2::RotationMatrix(player.angle);
+		for (int i = 0; i < plants.size(); i++)
+		{
+			if ((cuttingLocation - (plants[i].centerBotLoc)).GetMagnitude() < (plants[i].currentSize + 5.0f))
+			{
+				if (!plants[i].isBeingCut)
+				{
+					plants[i].isBeingCut = true;
+				}
+
+				plants[i].currentCutAmount += 1.0f;
+				
+			}
+			else
+			{
+				plants[i].currentCutAmount = 0.0f;
+				plants[i].isBeingCut = false;
+			}
+		}
+	}
 
 
+	for (int i = 0; i < plants.size(); i++)
+	{
+		if (plants[i].currentCutAmount >= plants[i].maxCutAmount)
+		{
+			plants[i].isDead = true;
+			player.foodStored += plants[i].maxFoodValue * (plants[i].currentSize / plants[i].maxSize);
+		}
+	}
+
+
+
+	// plants attack each other
+
+	for (int i = 0; i < plants.size(); i++)
+	{
+		if (!plants[i].isDead)
+		{
+			for (int j = 0; j < plants.size(); j++)
+			{
+				if ((plants[i].currentSize > plants[j].currentSize)
+					&& ((plants[i].centerBotLoc - plants[j].centerBotLoc).GetMagnitude() < (plants[i].currentSize + plants[j].currentSize)))
+				{
+					plants[j].currentSize -= plants[j].growthSpeed * 4.0f;
+				}
+			}
+		}
+		
+	}
+
+	for (int i = 0; i < plants.size(); i++)
+	{
+		if (plants[i].currentSize <= 0.0f)
+		{
+			plants[i].isDead = true;
+		}
+	}
+	
+
+
+	// breathing
 
 	player.Breathe(&dome.atmosphere);
 
 	for (int i = 0; i < plants.size(); i++)
 	{
-		if (plants[i].CanBreathe(&dome.atmosphere))
+		if (plants[i].CanBreathe(&dome.atmosphere) && !plants[i].isDead)
 		{
 			plants[i].Breathe(&dome.atmosphere);
 		}
 		else
 		{
-			std::swap(plants.begin() + i, plants.end() - 1);
+			plants[i].isDead = true;
+		}
+	}
+
+
+	// deleting dead plants
+
+	for (int i = 0; i < plants.size(); i++)
+	{
+		if (plants[i].isDead)
+		{
+			std::iter_swap(plants.begin() + i, plants.end() - 1);
 			plants.pop_back();
 			i--;
 		}
@@ -154,6 +238,9 @@ void Game::UpdateModel()
 	{
 		plants[i].ID = i;
 	}
+
+
+	// player sleeping mechanics
 
 	if (!player.isSleeping)
 	{
@@ -175,6 +262,8 @@ void Game::UpdateModel()
 	}
 	
 
+	// check if game over
+
 	if (!player.isAlive)
 	{
 		gameOver = true;
@@ -182,7 +271,7 @@ void Game::UpdateModel()
 
 
 
-
+	// update camera
 
 	Vec2 newCameraLoc = player.centerBotLoc + Vec2(0.0f, 0.0f); //(float)player.height / 2.0f
 	float cameraSmoothing = 1.0f;
@@ -274,6 +363,13 @@ void Game::ComposeFrame()
 	}
 	//gfx.DrawCircle((player.centerBotLoc + player.transformShiftCircle - camera.loc) * screenTransformFlip + screenTransformShift, 2.0f, Colors::Red);
 
+	if (player.isCutting)
+	{
+		Vec2 cuttingLocation = player.centerBotLoc + (player.isFacingRight ? Vec2(40.0f, 10.0f) : Vec2(-40.0f, 10.0f)) * Mat2::RotationMatrix(player.angle);
+
+		Vec2 axeHitLoc = player.isFacingRight ? Vec2(40.0f, 10.0f) : Vec2(-40.0f, 10.0f);
+		gfx.DrawCircle((cuttingLocation - camera.loc) * cameraRotation.GetTranspose() * screenTransformFlip + screenTransformShift, 5.0f, Colors::Red);
+	}
 
 
 
@@ -310,5 +406,5 @@ void Game::ComposeFrame()
 	RetroContent::DrawString(gfx, std::to_string((int)(player.energy + 0.5f)) + "%", { 1525.0f, 200.0f }, 2, Colors::Cyan);
 
 	RetroContent::DrawString(gfx, std::string("FOOD PRODUCED"), { 1375.0f, 250.0f }, 2, Colors::Red);
-	RetroContent::DrawString(gfx, std::to_string((int)(0)) + "%", { 1525.0f, 250.0f }, 2, Colors::Red);
+	RetroContent::DrawString(gfx, std::to_string((int)(player.foodStored)) + "%", { 1525.0f, 250.0f }, 2, Colors::Red);
 }

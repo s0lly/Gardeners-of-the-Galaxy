@@ -31,6 +31,10 @@ struct Plant
 
 			widthToHeight = 0.3f;
 
+			maxFoodValue = 1.0f;
+
+			maxCutAmount = 60.0f;
+
 		}break;
 		case PLANT_TYPE_BIGCARBONEATER:
 		{
@@ -42,6 +46,10 @@ struct Plant
 			growthSpeed = 0.02f;
 
 			widthToHeight = 0.1f;
+
+			maxFoodValue = 10.0f;
+
+			maxCutAmount = 500.0f;
 		}break;
 		}
 	}
@@ -58,10 +66,16 @@ struct Plant
 
 	int ID;
 
+	float maxFoodValue;
+	bool isBeingCut = false;
+	float currentCutAmount = 0.0f;
+	float maxCutAmount;
 
 
 	float carbonDioxideBreathe;
 	float oxygenBreathe;
+
+	bool isDead = false;
 
 	bool CanBreathe(Atmosphere *atmosphere)
 	{
