@@ -176,7 +176,7 @@ void Game::UpdateModel()
 
 	for (int i = 0; i < plants.size(); i++)
 	{
-		if (plants[i].currentCutAmount >= plants[i].maxCutAmount)
+		if (plants[i].currentCutAmount >= plants[i].maxCutAmount * (plants[i].currentSize / plants[i].maxSize))
 		{
 			plants[i].isDead = true;
 			player.foodStored += plants[i].maxFoodValue * (plants[i].currentSize / plants[i].maxSize);
@@ -219,7 +219,7 @@ void Game::UpdateModel()
 
 	for (int i = 0; i < plants.size(); i++)
 	{
-		if (plants[i].CanBreathe(&dome.atmosphere) && !plants[i].isDead)
+		if (plants[i].CanBreathe(&dome.atmosphere) && !plants[i].isDead && !plants[i].isBeingCut)
 		{
 			plants[i].Breathe(&dome.atmosphere);
 		}
@@ -416,4 +416,19 @@ void Game::ComposeFrame()
 
 	RetroContent::DrawString(gfx, std::string("FOOD PRODUCED"), { 1375.0f, 250.0f }, 2, Colors::Red);
 	RetroContent::DrawString(gfx, std::to_string((int)(player.foodStored)) + "%", { 1525.0f, 250.0f }, 2, Colors::Red);
+
+
+	if (player.isCutting)
+	{
+		for (int i = 0; i < plants.size(); i++)
+		{
+			if (plants[i].isBeingCut)
+			{
+				gfx.DrawRect((player.centerBotLoc + Vec2(-60.0f, -60.0f) - camera.loc) * screenTransformFlip + screenTransformShift, 120.0f, 15.0f, Colors::Black);
+				gfx.DrawRect((player.centerBotLoc + Vec2(-57.5f, -62.5f) - camera.loc) * screenTransformFlip + screenTransformShift, 115.0f * (plants[i].currentCutAmount / (plants[i].maxCutAmount* (plants[i].currentSize / plants[i].maxSize))), 10.0f, Colors::Blue);
+				break;
+			}
+		}
+	}
+
 }
