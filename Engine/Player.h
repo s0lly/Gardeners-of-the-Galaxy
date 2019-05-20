@@ -34,6 +34,10 @@ struct Player
 			atmosphere->oxygenLevel -= 0.1f;
 			atmosphere->carbonDioxideLevel += 0.1f;
 		}
+		else
+		{
+			isAlive = false;
+		}
 	}
 
 	void ExpendEnergy(float energyUsed)
