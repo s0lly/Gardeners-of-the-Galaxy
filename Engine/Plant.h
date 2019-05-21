@@ -38,18 +38,18 @@ struct Plant
 		}break;
 		case PLANT_TYPE_BIGCARBONEATER:
 		{
-			carbonDioxideBreathe = 0.0005f;
-			oxygenBreathe = -0.0005f;
+			carbonDioxideBreathe = 0.000001f;
+			oxygenBreathe = -0.000001f;
 
 			currentSize = 1.0f;
 			maxSize = 300.0f;
-			growthSpeed = 0.02f;
+			growthSpeed = 0.1f;
 
 			widthToHeight = 0.1f;
 
 			maxFoodValue = 100.0f;
 
-			maxCutAmount = 500.0f;
+			maxCutAmount = 1200.0f;
 		}break;
 		}
 	}

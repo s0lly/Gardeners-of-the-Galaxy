@@ -140,6 +140,41 @@ public:
 		}
 	}
 
+	void DrawCircleWithinCircle(Vec2 loc, float radius, Color c, Vec2 outerLoc, float outerRadius, float alpha = 1.0f)
+	{
+		// Initial calculations ensure that only thevisible part of each circle is drawn
+
+		int left = (int)(loc.x - radius);
+		left = left < 0 ? 0 : left;
+
+		int right = (int)(loc.x + radius) + 1;
+		right = right >= ScreenWidth ? ScreenWidth : right;
+
+		int top = (int)(loc.y - radius);
+		top = top < 0 ? 0 : top;
+
+		int bottom = (int)(loc.y + radius) + 1;
+		bottom = bottom >= ScreenHeight ? ScreenHeight : bottom;
+
+		float radiusSqrd = radius * radius;
+
+		for (int j = top; j < bottom; j++)
+		{
+			float distSqrdY = ((float)j - loc.y) * ((float)j - loc.y);
+
+			for (int i = left; i < right; i++)
+			{
+				float distSqrdX = ((float)i - loc.x) * ((float)i - loc.x);
+				float distSqrdTotal = distSqrdX + distSqrdY;
+
+				if ((distSqrdTotal < radiusSqrd) && (((Vec2((float)i - outerLoc.x, (float)j - outerLoc.y)).GetMagnitude() < outerRadius)))
+				{
+					PutPixelWithAlphaBlend(i, j, c, alpha);
+				}
+			}
+		}
+	}
+
 	void DrawEllipse(Vec2 loc, float radiusWidth, float radiusHeight, Color c, float alpha = 1.0f) // Not working yet!!
 	{
 		// Initial calculations ensure that only thevisible part of each circle is drawn

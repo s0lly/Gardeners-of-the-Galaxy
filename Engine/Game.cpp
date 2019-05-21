@@ -51,27 +51,33 @@ void Game::ProcessInput()
 
 		if (!player.isSleeping)
 		{
+			player.isMoving = false;
+
 			if (wnd.kbd.KeyIsPressed('W'))
 			{
 				player.velocity = player.velocity + Vec2{ 0.0f, 0.02f } *playerRotation * (player.energy / player.maxEnergy);
 				player.ExpendEnergy(0.01f);
+				player.isMoving = true;
 			}
 			if (wnd.kbd.KeyIsPressed('S'))
 			{
 				player.velocity = player.velocity + Vec2{ 0.0f, -0.02f } *playerRotation * (player.energy / player.maxEnergy);
 				player.ExpendEnergy(0.01f);
+				player.isMoving = true;
 			}
 			if (wnd.kbd.KeyIsPressed('A'))
 			{
 				player.velocity = player.velocity + Vec2{ -0.02f, 0.0f } *playerRotation * (player.energy / player.maxEnergy);
 				player.ExpendEnergy(0.01f);
 				player.isFacingRight = false;
+				player.isMoving = true;
 			}
 			if (wnd.kbd.KeyIsPressed('D'))
 			{
 				player.velocity = player.velocity + Vec2{ 0.02f, 0.0f } *playerRotation * (player.energy / player.maxEnergy);
 				player.ExpendEnergy(0.01f);
 				player.isFacingRight = true;
+				player.isMoving = true;
 			}
 
 
@@ -288,6 +294,28 @@ void Game::UpdateModel()
 			player.velocity = player.velocity - normal * 2.0f * (player.velocity.Dot(normal));
 		}
 
+		if (vectorFromPlayerToWorld.GetMagnitude() < 800.0f)
+		{
+			player.velocity = player.velocity - vectorFromPlayerToWorld.GetNormalized() * (800.0f - vectorFromPlayerToWorld.GetMagnitude()) * 0.5f;
+		}
+
+		float sinAngle = sin(player.animationAngle);
+
+		player.headLoc = newPosition + player.headLocOffset;
+		player.bodyLoc = newPosition + player.bodyLocOffset;
+		player.leftLegLoc = newPosition + player.leftLegLocOffset + player.legAnimationOffset * (-sinAngle);
+		player.rightLegLoc = newPosition + player.rightLegLocOffset + player.legAnimationOffset * (sinAngle);
+		player.leftArmLoc = newPosition + player.leftArmLocOffset + player.armAnimationOffset * (sinAngle);
+		player.rightArmLoc = newPosition + player.rightArmLocOffset + player.armAnimationOffset * (-sinAngle);
+
+		if (player.isMoving)
+		{
+			player.animationAngle += 0.05f;
+		}
+		else
+		{
+			player.animationAngle -= 0.01f;
+		}
 
 		// player cutting applied to plants
 
@@ -401,7 +429,7 @@ void Game::UpdateModel()
 			player.Sleep();
 			if (player.isSleeping)
 			{
-				player.centerBotLoc = Vec2(-830.0f, -60.0f);
+				player.centerBotLoc = Vec2(-830.0f, -70.0f);
 				player.velocity = Vec2(0.0f, 0.0f);
 			}
 			else
@@ -409,6 +437,15 @@ void Game::UpdateModel()
 				player.centerBotLoc = habitat.doorLoc;
 			}
 
+		}
+
+
+		for (int i = 0; i < plants.size(); i++)
+		{
+			if (plants[i].currentSize > 200.0f)
+			{
+				player.isAlive = false;
+			}
 		}
 
 
@@ -488,11 +525,11 @@ void Game::ComposeFrame()
 	if (moonZ >= planetZ)
 	{
 		gfx.DrawCircle(((moonLoc - camera.loc / (1000.0f * moonZ)) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, moonRadius / moonZ, Colors::Gray);
-		gfx.DrawCircle(((planetLoc - camera.loc / (1000.0f * planetZ)) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, planetRadius, Colors::Green);
+		gfx.DrawCircle(((planetLoc - camera.loc / (1000.0f * planetZ)) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, planetRadius, Color(0, 255, 0));
 	}
 	else
 	{
-		gfx.DrawCircle(((planetLoc - camera.loc / (1000.0f * planetZ)) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, planetRadius, Colors::Green);
+		gfx.DrawCircle(((planetLoc - camera.loc / (1000.0f * planetZ)) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, planetRadius, Color(0, 255, 0));
 		gfx.DrawCircle(((moonLoc - camera.loc / (1000.0f * moonZ)) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, moonRadius / moonZ, Colors::Gray);
 	}
 
@@ -527,14 +564,46 @@ void Game::ComposeFrame()
 	gfx.DrawCircle(((habitat.doorLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, habitat.doorHeightRadius, habitat.doorColor);
 	if (player.isSleeping)
 	{
-		gfx.DrawRectWithinCircle((player.centerBotLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue, ((habitat.windowLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, habitat.windowRadius, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+		//gfx.DrawRectWithinCircle((player.centerBotLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue, ((habitat.windowLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, habitat.windowRadius, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+		gfx.DrawCircleWithinCircle((player.headLoc + Vec2{0.0f, 0.0f} - camera.loc) * screenTransformFlip + screenTransformShift, player.headRadius, Color(100, 50, 255), ((habitat.windowLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, habitat.windowRadius, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+		gfx.DrawCircleWithinCircle((player.bodyLoc + Vec2{ 0.0f, 0.0f } - camera.loc) * screenTransformFlip + screenTransformShift, player.bodyRadius, Colors::Blue, ((habitat.windowLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, habitat.windowRadius, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+		
+
 	}
 	gfx.DrawCircle(((habitat.windowLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, habitat.windowRadius, habitat.windowColor, 0.75f);
 
+	if (player.isSleeping)
+	{
+		RetroContent::DrawString(gfx, std::string("Z"), { 818.0f, 390.0f }, 2, Colors::Yellow, ((cosf((float)player.sleepAnimation / 10.0f) + 1) / 2.0f) * (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+		((player.sleepAnimation / 10.0f) > (PI / 4.0f)) ? RetroContent::DrawString(gfx, std::string("Z"), { 832.0f, 375.0f }, 2, Colors::Yellow, ((sinf((float)player.sleepAnimation / 10.0f + PI / 4.0f) + 1) / 2.0f) * (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f))) : true;
+		((player.sleepAnimation / 10.0f) > (PI / 2.0f)) ? RetroContent::DrawString(gfx, std::string("Z"), { 844.0f, 360.0f }, 2, Colors::Yellow, ((sinf((float)player.sleepAnimation / 10.0f) + 1) / 2.0f) * (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f))) : true;
+		player.sleepAnimation++;
+	}
+	else
+	{
+		player.sleepAnimation = 0;
+	}
 
 	if (!player.isSleeping)
 	{
-		gfx.DrawRect((player.centerBotLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+		gfx.DrawCircle((player.headLoc - camera.loc) * screenTransformFlip + screenTransformShift, player.headRadius, Color(100, 50, 255), (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+		if (player.isFacingRight)
+		{
+			gfx.DrawCircle((player.leftArmLoc - camera.loc) * screenTransformFlip + screenTransformShift, player.leftArmRadius, Color(100, 0, 205), (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+			gfx.DrawCircle((player.leftLegLoc - camera.loc) * screenTransformFlip + screenTransformShift, player.leftLegRadius, Color(0, 100, 150), (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+			gfx.DrawCircle((player.bodyLoc - camera.loc) * screenTransformFlip + screenTransformShift, player.bodyRadius, Colors::Blue, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+			gfx.DrawCircle((player.rightLegLoc - camera.loc) * screenTransformFlip + screenTransformShift, player.rightLegRadius, Color(50, 150, 200), (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+			gfx.DrawCircle((player.rightArmLoc - camera.loc) * screenTransformFlip + screenTransformShift, player.rightArmRadius, Color(150, 50, 255), (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+
+		}
+		else
+		{
+			gfx.DrawCircle((player.rightArmLoc - camera.loc) * screenTransformFlip + screenTransformShift, player.rightArmRadius, Color(150, 50, 255), (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+			gfx.DrawCircle((player.rightLegLoc - camera.loc) * screenTransformFlip + screenTransformShift, player.rightLegRadius, Color(50, 150, 200), (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+			gfx.DrawCircle((player.bodyLoc - camera.loc) * screenTransformFlip + screenTransformShift, player.bodyRadius, Colors::Blue, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+			gfx.DrawCircle((player.leftLegLoc - camera.loc) * screenTransformFlip + screenTransformShift, player.leftLegRadius, Color(0, 100, 150), (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+			gfx.DrawCircle((player.leftArmLoc - camera.loc) * screenTransformFlip + screenTransformShift, player.leftArmRadius, Color(100, 0, 205), (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+		}
 	}
 	//gfx.DrawCircle((player.centerBotLoc + player.transformShiftCircle - camera.loc) * screenTransformFlip + screenTransformShift, 2.0f, Colors::Red);
 
@@ -593,41 +662,39 @@ void Game::ComposeFrame()
 				}
 			}
 		}
+	}
+	if (gamestate == GAMESTATE::GAMESTATE_RESTARTMENU)
+	{
+		RetroContent::DrawString(gfx, std::string("ALAS"), { 800.0f, 100.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
+		RetroContent::DrawString(gfx, std::string("YOU ARE NO LONGER"), { 800.0f, 280.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
 
-		if (!player.isAlive)
+		RetroContent::DrawString(gfx, std::string("RESTART"), { 800.0f, 600.0f }, 6, selectedOption == 0 ? Colors::Red : Colors::Yellow, fadeInAlpha);
+		RetroContent::DrawString(gfx, std::string("MAIN MENU"), { 800.0f, 750.0f }, 6, selectedOption == 1 ? Colors::Red : Colors::Yellow, fadeInAlpha);
+
+		if (selectedOption == 0)
 		{
-			RetroContent::DrawString(gfx, std::string("ALAS"), { 800.0f, 100.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
-			RetroContent::DrawString(gfx, std::string("YOU ARE NO LONGER"), { 800.0f, 280.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
-
-			RetroContent::DrawString(gfx, std::string("RESTART"), { 800.0f, 600.0f }, 6, selectedOption == 0 ? Colors::Red : Colors::Yellow, fadeInAlpha);
-			RetroContent::DrawString(gfx, std::string("MAIN MENU"), { 800.0f, 750.0f }, 6, selectedOption == 1 ? Colors::Red : Colors::Yellow, fadeInAlpha);
-			
-			if (selectedOption == 0)
-			{
-				gfx.DrawCircle({ 500.0f, 625.0f }, 20.0f, Colors::Red, fadeInAlpha);
-				gfx.DrawCircle({ 1100.0f, 625.0f }, 20.0f, Colors::Red, fadeInAlpha);
-			}
-			else
-			{
-				gfx.DrawCircle({ 500.0f, 775.0f }, 20.0f, Colors::Red, fadeInAlpha);
-				gfx.DrawCircle({ 1100.0f, 775.0f }, 20.0f, Colors::Red, fadeInAlpha);
-			}
-			
-			
+			gfx.DrawCircle({ 500.0f, 625.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 1100.0f, 625.0f }, 20.0f, Colors::Red, fadeInAlpha);
+		}
+		else
+		{
+			gfx.DrawCircle({ 500.0f, 775.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 1100.0f, 775.0f }, 20.0f, Colors::Red, fadeInAlpha);
+		}
 
 
-			if (currentFadeInEffect < maxFadeInEffect)
-			{
-				currentFadeInEffect += 1.0f;
-			}
-			else
-			{
-				currentFadeInEffect = maxFadeInEffect;
-			}
+
+
+		if (currentFadeInEffect < maxFadeInEffect)
+		{
+			currentFadeInEffect += 1.0f;
+		}
+		else
+		{
+			currentFadeInEffect = maxFadeInEffect;
 		}
 	}
-
-	if (gamestate == GAMESTATE::GAMESTATE_INGAMEMENU)
+	else if (gamestate == GAMESTATE::GAMESTATE_INGAMEMENU)
 	{
 		RetroContent::DrawString(gfx, std::string("GAME PAUSED"), { 800.0f, 190.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
 
