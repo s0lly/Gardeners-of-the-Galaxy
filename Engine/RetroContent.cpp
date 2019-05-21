@@ -1,6 +1,6 @@
 #include "RetroContent.h"
 
-void RetroContent::DrawString(Graphics& gfx, std::string word, Vec2 loc, int size, Color c)
+void RetroContent::DrawString(Graphics& gfx, std::string word, Vec2 loc, int size, Color c, float alpha)
 {
 	int offsetX = -((word.length() * size * fontWidth + (word.length() - 1) * fontPadding) / 2);
 
@@ -14,7 +14,7 @@ void RetroContent::DrawString(Graphics& gfx, std::string word, Vec2 loc, int siz
 				{
 					if (letters[word[i] - 65][y * fontWidth + x] == 1)
 					{
-						gfx.DrawRect(Vec2(offsetX + loc.x + i * (fontPadding + fontWidth * size) + x * size, loc.y + y * size), size, size, c);
+						gfx.DrawRect(Vec2(offsetX + loc.x + i * (fontPadding + fontWidth * size) + x * size, loc.y + y * size), size, size, c, alpha);
 					}
 				}
 
@@ -22,7 +22,7 @@ void RetroContent::DrawString(Graphics& gfx, std::string word, Vec2 loc, int siz
 				{
 					if (otherText[word[i] - 32][y * fontWidth + x] == 1)
 					{
-						gfx.DrawRect(Vec2(offsetX + loc.x + i * (fontPadding + fontWidth * size) + x * size, loc.y + y * size), size, size, c);
+						gfx.DrawRect(Vec2(offsetX + loc.x + i * (fontPadding + fontWidth * size) + x * size, loc.y + y * size), size, size, c, alpha);
 					}
 				}
 
@@ -30,7 +30,7 @@ void RetroContent::DrawString(Graphics& gfx, std::string word, Vec2 loc, int siz
 				{
 					if (numbers[word[i] - 48][y * fontWidth + x] == 1)
 					{
-						gfx.DrawRect(Vec2(offsetX + loc.x + i * (fontPadding + fontWidth * size) + x * size, loc.y + y * size), size, size, c);
+						gfx.DrawRect(Vec2(offsetX + loc.x + i * (fontPadding + fontWidth * size) + x * size, loc.y + y * size), size, size, c, alpha);
 					}
 				}
 

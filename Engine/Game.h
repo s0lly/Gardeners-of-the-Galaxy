@@ -34,13 +34,27 @@
 #include "RetroContent.h"
 #include <vector>
 
+enum GAMESTATE
+{
+	GAMESTATE_STARTSCREEN,
+	GAMESTATE_STARTMENU,
+	GAMESTATE_RUNNING,
+	GAMESTATE_INGAMEMENU,
+	GAMESTATE_RESTARTMENU,
+	GAMESTATE_RESTARTING,
+	GAMESTATE_GAMEOVER
+};
+
 class Game
 {
 public:
 	Game( class MainWindow& wnd );
 	Game( const Game& ) = delete;
 	Game& operator=( const Game& ) = delete;
-	bool Go();
+	void Go();
+
+	GAMESTATE gamestate = GAMESTATE_STARTMENU;
+
 private:
 	void ComposeFrame();
 	void UpdateModel();
@@ -55,22 +69,17 @@ private:
 	/*  User Variables              */
 	/********************************/
 
-	Camera camera;
-	Player player;
-	World world;
+	
 
 	std::vector<Star> starmap;
 
+	Camera camera;
+	Player player;
+	World world;
 	Dome dome;
-
 	Habitat habitat;
-
 	Spaceship spaceship;
-
 	std::vector<Plant> plants;
-
-	bool gameOver = false;
-
 
 	Vec2 planetLoc{ -500.0f, 50.0f };
 	float planetRadius = 240.0f;
@@ -84,5 +93,13 @@ private:
 	Vec2 planet1Loc{ -300.0f, -400.0f };
 	float planet1Radius = 100.0f;
 	float planet1Z = 0.1f;
+
+
+	float currentFadeInEffect = 0.0f;
+	float maxFadeInEffect = 180.0f;
+	int selectedOption = 0;
+
+	bool isPausedPressed = false;
+	bool isActionedPressed = false;
 
 };

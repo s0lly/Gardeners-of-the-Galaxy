@@ -68,7 +68,7 @@ public:
 				(unsigned char)((float)existingColor.GetB() * (1.0f - a) + (float)c.GetB() * (a)) });
 	}
 
-	void DrawRect(Vec2 loc, int length, int height, Color c)
+	void DrawRect(Vec2 loc, int length, int height, Color c, float alpha = 1.0f)
 	{
 		for (int j = (int)loc.y; j < (int)loc.y + height; j++)
 		{
@@ -78,14 +78,14 @@ public:
 				{
 					if (i >= 0 && i < ScreenWidth)
 					{
-						PutPixel(i, j, c);
+						PutPixelWithAlphaBlend(i, j, c, alpha);
 					}
 				}
 			}
 		}
 	}
 
-	void DrawRectWithinCircle(Vec2 loc, int length, int height, Color c, Vec2 circleLoc, float circleRadius)
+	void DrawRectWithinCircle(Vec2 loc, int length, int height, Color c, Vec2 circleLoc, float circleRadius, float alpha = 1.0f)
 	{
 		for (int j = (int)loc.y; j < (int)loc.y + height; j++)
 		{
@@ -97,7 +97,7 @@ public:
 					{
 						if ((Vec2((float)i, (float)j) - circleLoc).GetMagnitudeSqrd() < (circleRadius * circleRadius))
 						{
-							PutPixel(i, j, c);
+							PutPixelWithAlphaBlend(i, j, c, alpha);
 						}	
 					}
 				}

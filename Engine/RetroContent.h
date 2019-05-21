@@ -9,7 +9,7 @@ class RetroContent
 {
 public:
 
-	static void DrawString(Graphics& gfx, std::string word, Vec2 loc, int size, Color c);
+	static void DrawString(Graphics& gfx, std::string word, Vec2 loc, int size, Color c, float alpha = 1.0f);
 
 
 

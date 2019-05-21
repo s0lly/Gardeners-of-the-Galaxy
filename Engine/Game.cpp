@@ -33,7 +33,7 @@ Game::Game( MainWindow& wnd )
 	
 }
 
-bool Game::Go()
+void Game::Go()
 {
 	gfx.BeginFrame();	
 	ProcessInput();
@@ -41,279 +41,433 @@ bool Game::Go()
 	ComposeFrame();
 	gfx.EndFrame();
 
-	return gameOver;
 }
 
 void Game::ProcessInput()
 {
+	if (gamestate == GAMESTATE_RUNNING)
+	{
+		Mat2 playerRotation = Mat2::RotationMatrix(player.angle);
 
-	Mat2 playerRotation = Mat2::RotationMatrix(player.angle);
+		if (!player.isSleeping)
+		{
+			if (wnd.kbd.KeyIsPressed('W'))
+			{
+				player.velocity = player.velocity + Vec2{ 0.0f, 0.02f } *playerRotation * (player.energy / player.maxEnergy);
+				player.ExpendEnergy(0.01f);
+			}
+			if (wnd.kbd.KeyIsPressed('S'))
+			{
+				player.velocity = player.velocity + Vec2{ 0.0f, -0.02f } *playerRotation * (player.energy / player.maxEnergy);
+				player.ExpendEnergy(0.01f);
+			}
+			if (wnd.kbd.KeyIsPressed('A'))
+			{
+				player.velocity = player.velocity + Vec2{ -0.02f, 0.0f } *playerRotation * (player.energy / player.maxEnergy);
+				player.ExpendEnergy(0.01f);
+				player.isFacingRight = false;
+			}
+			if (wnd.kbd.KeyIsPressed('D'))
+			{
+				player.velocity = player.velocity + Vec2{ 0.02f, 0.0f } *playerRotation * (player.energy / player.maxEnergy);
+				player.ExpendEnergy(0.01f);
+				player.isFacingRight = true;
+			}
 
-	if (!player.isSleeping)
+
+			if (wnd.kbd.KeyIsPressed(VK_SPACE))
+			{
+				if (player.centerBotLoc.GetMagnitude() - world.radius < 10.0f)
+				{
+					plants.push_back(Plant(player.centerBotLoc.GetNormalized() * world.radius, PLANT_TYPE_CARBONEATER, plants.size()));
+				}
+			}
+
+
+			if (wnd.kbd.KeyIsPressed(VK_RETURN))
+			{
+				if ((player.centerBotLoc - habitat.doorLoc).GetMagnitude() < 20.0f)
+				{
+					player.isSleeping = true;
+				}
+			}
+
+			if (wnd.kbd.KeyIsPressed(VK_CONTROL))
+			{
+				player.isCutting = true;
+			}
+			else
+			{
+				player.isCutting = false;
+			}
+
+			if (wnd.kbd.KeyIsPressed(VK_SHIFT))
+			{
+				if (player.centerBotLoc.GetMagnitude() - world.radius < 10.0f)
+				{
+					plants.push_back(Plant(player.centerBotLoc.GetNormalized() * world.radius, PLANT_TYPE_BIGCARBONEATER, plants.size()));
+				}
+			}
+
+			if (wnd.kbd.KeyIsPressed(VK_ESCAPE))
+			{
+				if (!isPausedPressed)
+				{
+					gamestate = GAMESTATE_INGAMEMENU;
+					isPausedPressed = true;
+					selectedOption = 0;
+				}
+			}
+			else
+			{
+				isPausedPressed = false;
+			}
+
+		}
+	}
+	else if (gamestate == GAMESTATE_RESTARTMENU)
 	{
 		if (wnd.kbd.KeyIsPressed('W'))
 		{
-			player.velocity = player.velocity + Vec2{ 0.0f, 0.02f } *playerRotation * (player.energy / player.maxEnergy);
-			player.ExpendEnergy(0.01f);
+			selectedOption = 0;
 		}
 		if (wnd.kbd.KeyIsPressed('S'))
 		{
-			player.velocity = player.velocity + Vec2{ 0.0f, -0.02f } *playerRotation * (player.energy / player.maxEnergy);
-			player.ExpendEnergy(0.01f);
-		}
-		if (wnd.kbd.KeyIsPressed('A'))
-		{
-			player.velocity = player.velocity + Vec2{ -0.02f, 0.0f } *playerRotation * (player.energy / player.maxEnergy);
-			player.ExpendEnergy(0.01f);
-			player.isFacingRight = false;
-		}
-		if (wnd.kbd.KeyIsPressed('D'))
-		{
-			player.velocity = player.velocity + Vec2{ 0.02f, 0.0f } *playerRotation * (player.energy / player.maxEnergy);
-			player.ExpendEnergy(0.01f);
-			player.isFacingRight = true;
+			selectedOption = 1;
 		}
 
-
-		if (wnd.kbd.KeyIsPressed(VK_SPACE))
+		if (wnd.kbd.KeyIsPressed(VK_RETURN) || wnd.kbd.KeyIsPressed(VK_SPACE))
 		{
-			if (player.centerBotLoc.GetMagnitude() - world.radius < 10.0f)
+			if (!isActionedPressed)
 			{
-				plants.push_back(Plant(player.centerBotLoc.GetNormalized() * world.radius, PLANT_TYPE_CARBONEATER, plants.size()));
+				if (selectedOption == 0)
+				{
+					gamestate = GAMESTATE_RESTARTING;
+				}
+				else
+				{
+					gamestate = GAMESTATE_STARTMENU;
+				}
+				isActionedPressed = true;
+				selectedOption = 0;
 			}
-		}
-
-
-		if (wnd.kbd.KeyIsPressed(VK_RETURN))
-		{
-			if ((player.centerBotLoc - habitat.doorLoc).GetMagnitude() < 20.0f)
-			{
-				player.isSleeping = true;
-			}
-		}
-
-		if (wnd.kbd.KeyIsPressed(VK_CONTROL))
-		{
-			player.isCutting = true;
 		}
 		else
 		{
-			player.isCutting = false;
+			isActionedPressed = false;
+		}
+	}
+	else if (gamestate == GAMESTATE_INGAMEMENU)
+	{
+		if (wnd.kbd.KeyIsPressed('W'))
+		{
+			selectedOption = 0;
+		}
+		if (wnd.kbd.KeyIsPressed('S'))
+		{
+			selectedOption = 1;
 		}
 
-		if (wnd.kbd.KeyIsPressed(VK_SHIFT))
+		if (wnd.kbd.KeyIsPressed(VK_ESCAPE))
 		{
-			if (player.centerBotLoc.GetMagnitude() - world.radius < 10.0f)
+			if (!isPausedPressed)
 			{
-				plants.push_back(Plant(player.centerBotLoc.GetNormalized() * world.radius, PLANT_TYPE_BIGCARBONEATER, plants.size()));
+				gamestate = GAMESTATE_RUNNING;
+				isPausedPressed = true;
+				selectedOption = 0;
 			}
 		}
+		else
+		{
+			isPausedPressed = false;
+		}
 
+		if (wnd.kbd.KeyIsPressed(VK_RETURN) || wnd.kbd.KeyIsPressed(VK_SPACE))
+		{
+			if (!isActionedPressed)
+			{
+				if (selectedOption == 0)
+				{
+					gamestate = GAMESTATE_RESTARTING;
+				}
+				else
+				{
+					gamestate = GAMESTATE_STARTMENU;
+				}
+				isActionedPressed = true;
+				selectedOption = 0;
+			}
+		}
+		else
+		{
+			isActionedPressed = false;
+		}
 	}
-	
+	else if (gamestate == GAMESTATE_STARTMENU)
+	{
+		if (wnd.kbd.KeyIsPressed('W'))
+		{
+			selectedOption = 0;
+		}
+		if (wnd.kbd.KeyIsPressed('S'))
+		{
+			selectedOption = 1;
+		}
+
+		if (wnd.kbd.KeyIsPressed(VK_RETURN) || wnd.kbd.KeyIsPressed(VK_SPACE))
+		{
+			if (!isActionedPressed)
+			{
+				if (selectedOption == 0)
+				{
+					gamestate = GAMESTATE_RESTARTING;
+				}
+				else
+				{
+					gamestate = GAMESTATE_GAMEOVER;
+				}
+				isActionedPressed = true;
+				selectedOption = 0;
+			}
+		}
+		else
+		{
+			isActionedPressed = false;
+		}
+	}
 
 }
 
 void Game::UpdateModel()
 {
-	float gravityAccelerationMagnitude = 0.01f;
-
-	Vec2 vectorFromPlayerToWorld = (world.loc - player.centerBotLoc);
-
-	Vec2 gravityAcceleration = vectorFromPlayerToWorld.GetNormalized() * gravityAccelerationMagnitude;
-
-
-	player.velocity = player.velocity + gravityAcceleration;
-
-	Vec2 newPosition = player.centerBotLoc + player.velocity;
-
-	if (!((newPosition - world.loc).GetMagnitudeSqrd() < (world.radius * world.radius)))
+	if (gamestate == GAMESTATE_RESTARTING)
 	{
-		player.centerBotLoc = newPosition;
+		camera = Camera();
+		player = Player();
+		world = World();
+		dome = Dome();
+		habitat = Habitat();
+		spaceship = Spaceship();
+		plants = std::vector<Plant>();
+
+		currentFadeInEffect = 0.0f;
+		selectedOption = 0;
+
+		gamestate = GAMESTATE_RUNNING;
 	}
-	else
+	else if (gamestate == GAMESTATE_RUNNING)
 	{
-		Vec2 normal = player.centerBotLoc / world.radius;
-		player.velocity = player.velocity - normal * 2.0f * (player.velocity.Dot(normal));
-	}
+		float gravityAccelerationMagnitude = 0.01f;
 
-	if (!((newPosition + Vec2{ player.height * sin(player.angle), player.height * cos(player.angle) } - dome.loc).GetMagnitudeSqrd() > (dome.radius * dome.radius)))
-	{
-		player.centerBotLoc = newPosition;
-	}
-	else
-	{
-		Vec2 normal = player.centerBotLoc / (dome.radius - player.height);
-		player.velocity = player.velocity - normal * 2.0f * (player.velocity.Dot(normal));
-	}
+		Vec2 vectorFromPlayerToWorld = (world.loc - player.centerBotLoc);
+
+		Vec2 gravityAcceleration = vectorFromPlayerToWorld.GetNormalized() * gravityAccelerationMagnitude;
 
 
-	// player cutting applied to plants
+		player.velocity = player.velocity + gravityAcceleration;
 
-	if (player.isCutting)
-	{
-		Vec2 cuttingLocation = player.centerBotLoc + (player.isFacingRight ? Vec2(40.0f, 10.0f) : Vec2(-40.0f, 10.0f)) * Mat2::RotationMatrix(player.angle);
+		Vec2 newPosition = player.centerBotLoc + player.velocity;
+
+		if (!((newPosition - world.loc).GetMagnitudeSqrd() < (world.radius * world.radius)))
+		{
+			player.centerBotLoc = newPosition;
+		}
+		else
+		{
+			Vec2 normal = player.centerBotLoc / world.radius;
+			player.velocity = player.velocity - normal * 2.0f * (player.velocity.Dot(normal));
+		}
+
+		if (!((newPosition + Vec2{ player.height * sin(player.angle), player.height * cos(player.angle) } -dome.loc).GetMagnitudeSqrd() > (dome.radius * dome.radius)))
+		{
+			player.centerBotLoc = newPosition;
+		}
+		else
+		{
+			Vec2 normal = player.centerBotLoc / (dome.radius - player.height);
+			player.velocity = player.velocity - normal * 2.0f * (player.velocity.Dot(normal));
+		}
+
+
+		// player cutting applied to plants
+
+		if (player.isCutting)
+		{
+			Vec2 cuttingLocation = player.centerBotLoc + (player.isFacingRight ? Vec2(40.0f, 10.0f) : Vec2(-40.0f, 10.0f)) * Mat2::RotationMatrix(player.angle);
+			for (int i = 0; i < plants.size(); i++)
+			{
+				if ((cuttingLocation - (plants[i].centerBotLoc)).GetMagnitude() < (plants[i].currentSize + 15.0f))
+				{
+					if (!plants[i].isBeingCut)
+					{
+						plants[i].isBeingCut = true;
+					}
+
+					plants[i].currentCutAmount += 1.0f;
+
+				}
+				else
+				{
+					plants[i].currentCutAmount = 0.0f;
+					plants[i].isBeingCut = false;
+				}
+			}
+		}
+
+
 		for (int i = 0; i < plants.size(); i++)
 		{
-			if ((cuttingLocation - (plants[i].centerBotLoc)).GetMagnitude() < (plants[i].currentSize + 15.0f))
+			if (plants[i].currentCutAmount >= plants[i].maxCutAmount * (plants[i].currentSize / plants[i].maxSize))
 			{
-				if (!plants[i].isBeingCut)
-				{
-					plants[i].isBeingCut = true;
-				}
+				plants[i].isDead = true;
+				player.foodStored += plants[i].maxFoodValue * (plants[i].currentSize / plants[i].maxSize);
+			}
+		}
 
-				plants[i].currentCutAmount += 1.0f;
-				
+
+
+		// plants attack each other
+
+		for (int i = 0; i < plants.size(); i++)
+		{
+			if (!plants[i].isDead)
+			{
+				for (int j = 0; j < plants.size(); j++)
+				{
+					if ((plants[i].currentSize > plants[j].currentSize)
+						&& ((plants[i].centerBotLoc - plants[j].centerBotLoc).GetMagnitude() < (plants[i].currentSize + plants[j].currentSize)))
+					{
+						plants[j].currentSize -= plants[j].growthSpeed * 4.0f;
+					}
+				}
+			}
+
+		}
+
+		for (int i = 0; i < plants.size(); i++)
+		{
+			if (plants[i].currentSize <= 0.0f)
+			{
+				plants[i].isDead = true;
+			}
+		}
+
+
+
+		// breathing
+
+		player.Breathe(&dome.atmosphere);
+
+		for (int i = 0; i < plants.size(); i++)
+		{
+			if (plants[i].CanBreathe(&dome.atmosphere) && !plants[i].isDead && !plants[i].isBeingCut)
+			{
+				plants[i].Breathe(&dome.atmosphere);
 			}
 			else
 			{
-				plants[i].currentCutAmount = 0.0f;
-				plants[i].isBeingCut = false;
+				//plants[i].isDead = true;
 			}
 		}
-	}
 
 
-	for (int i = 0; i < plants.size(); i++)
-	{
-		if (plants[i].currentCutAmount >= plants[i].maxCutAmount * (plants[i].currentSize / plants[i].maxSize))
+		// deleting dead plants
+
+		for (int i = 0; i < plants.size(); i++)
 		{
-			plants[i].isDead = true;
-			player.foodStored += plants[i].maxFoodValue * (plants[i].currentSize / plants[i].maxSize);
-		}
-	}
-
-
-
-	// plants attack each other
-
-	for (int i = 0; i < plants.size(); i++)
-	{
-		if (!plants[i].isDead)
-		{
-			for (int j = 0; j < plants.size(); j++)
+			if (plants[i].isDead)
 			{
-				if ((plants[i].currentSize > plants[j].currentSize)
-					&& ((plants[i].centerBotLoc - plants[j].centerBotLoc).GetMagnitude() < (plants[i].currentSize + plants[j].currentSize)))
-				{
-					plants[j].currentSize -= plants[j].growthSpeed * 4.0f;
-				}
+				std::iter_swap(plants.begin() + i, plants.end() - 1);
+				plants.pop_back();
+				i--;
 			}
 		}
-		
-	}
 
-	for (int i = 0; i < plants.size(); i++)
-	{
-		if (plants[i].currentSize <= 0.0f)
+		std::sort(plants.begin(), plants.end());
+		for (int i = 0; i < plants.size(); i++)
 		{
-			plants[i].isDead = true;
+			plants[i].ID = i;
 		}
-	}
-	
 
 
-	// breathing
+		// player sleeping mechanics
 
-	player.Breathe(&dome.atmosphere);
-
-	for (int i = 0; i < plants.size(); i++)
-	{
-		if (plants[i].CanBreathe(&dome.atmosphere) && !plants[i].isDead && !plants[i].isBeingCut)
+		if (!player.isSleeping)
 		{
-			plants[i].Breathe(&dome.atmosphere);
+			player.ExpendEnergy(0.01f);
 		}
 		else
 		{
-			//plants[i].isDead = true;
+			player.Sleep();
+			if (player.isSleeping)
+			{
+				player.centerBotLoc = Vec2(-830.0f, -60.0f);
+				player.velocity = Vec2(0.0f, 0.0f);
+			}
+			else
+			{
+				player.centerBotLoc = habitat.doorLoc;
+			}
+
 		}
-	}
 
 
-	// deleting dead plants
+		// check if game over
 
-	for (int i = 0; i < plants.size(); i++)
-	{
-		if (plants[i].isDead)
+		if (!player.isAlive)
 		{
-			std::iter_swap(plants.begin() + i, plants.end() - 1);
-			plants.pop_back();
-			i--;
+			//gameOver = true;
+			gamestate = GAMESTATE_RESTARTMENU;
 		}
-	}
-
-	std::sort(plants.begin(), plants.end());
-	for (int i = 0; i < plants.size(); i++)
-	{
-		plants[i].ID = i;
-	}
 
 
-	// player sleeping mechanics
 
-	if (!player.isSleeping)
-	{
-		player.ExpendEnergy(0.01f);
-	}
-	else
-	{
-		player.Sleep();
-		if (player.isSleeping)
+		// update camera
+
+		Vec2 newCameraLoc = player.centerBotLoc + Vec2(0.0f, 0.0f); //(float)player.height / 2.0f
+		float cameraSmoothing = 1.0f;
+		camera.loc = camera.loc * (1.0f - cameraSmoothing) + newCameraLoc * cameraSmoothing;
+
+		player.angle = 0.0f;
+
+		Vec2 yUpNormalized{ 0.0f, 1.0f };
+		Vec2 playerLocNormalized = player.centerBotLoc.GetNormalized();
+
+		player.angle = acosf(yUpNormalized.Dot(playerLocNormalized)) * (player.centerBotLoc.x >= 0.0f ? 1.0f : -1.0f);
+
+		camera.angle = acosf(yUpNormalized.Dot(camera.loc.GetNormalized())) * (camera.loc.x >= 0.0f ? 1.0f : -1.0f);
+
+		if (spaceship.zLoc > 19.0f)
 		{
-			player.centerBotLoc = Vec2(-830.0f, -60.0f);
-			player.velocity = Vec2(0.0f, 0.0f);
+			spaceship.zLoc -= spaceship.zChange / 5.0f;
+		}
+		else if (spaceship.zLoc > 10.0f)
+		{
+			spaceship.zChange *= 0.97914836f;
+			spaceship.zLoc -= spaceship.zChange / 5.0f;
 		}
 		else
 		{
-			player.centerBotLoc = habitat.doorLoc;
+			spaceship.hasArrived = true;
 		}
-		
+
+		if (spaceship.arrivalTime > 0)
+		{
+			spaceship.arrivalTime -= ((spaceship.zChange / 5.0f) / 60.0f);
+		}
+		else
+		{
+			spaceship.arrivalTime = 0;
+		}
+
 	}
-	
-
-	// check if game over
-
-	if (!player.isAlive)
-	{
-		gameOver = true;
-	}
-
-
-
-	// update camera
-
-	Vec2 newCameraLoc = player.centerBotLoc + Vec2(0.0f, 0.0f); //(float)player.height / 2.0f
-	float cameraSmoothing = 1.0f;
-	camera.loc = camera.loc * (1.0f - cameraSmoothing) + newCameraLoc * cameraSmoothing;
-
-	player.angle = 0.0f;
-
-	Vec2 yUpNormalized{ 0.0f, 1.0f };
-	Vec2 playerLocNormalized = player.centerBotLoc.GetNormalized();
-
-	player.angle = acosf(yUpNormalized.Dot(playerLocNormalized)) * (player.centerBotLoc.x >= 0.0f ? 1.0f : -1.0f);
-
-	camera.angle = acosf(yUpNormalized.Dot(camera.loc.GetNormalized())) * (camera.loc.x >= 0.0f ? 1.0f : -1.0f);
-
-	if (spaceship.zLoc > 19.0f)
-	{
-		spaceship.zLoc -= spaceship.zChange / 5.0f;
-	}
-	else if (spaceship.zLoc > 10.0f)
-	{
-		spaceship.zChange *= 0.97914836f;
-		spaceship.zLoc -= spaceship.zChange / 5.0f;
-	}
-	else
-	{
-		spaceship.hasArrived = true;
-	}
-	
-
 }
 
 void Game::ComposeFrame()
 {
+	float fadeInAlpha = currentFadeInEffect / maxFadeInEffect;
+
+
 	moonAngleToPlanet += 0.001f;
 
 	moonLoc.x = -500.0f + cos(moonAngleToPlanet) * 400.0f;
@@ -348,27 +502,39 @@ void Game::ComposeFrame()
 
 
 
-	
+
 	for (int i = 0; i < plants.size(); i++)
 	{
-		gfx.DrawCircle(((plants[i].centerBotLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, plants[i].currentSize, Colors::Green);
+		Color c;
+
+		if (plants[i].type == PLANT_TYPE_CARBONEATER)
+		{
+			c = Colors::Green;
+		}
+		else
+		{
+			c = Colors::Cyan;
+		}
+
+		gfx.DrawCircle(((plants[i].centerBotLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, plants[i].currentSize, c);
+
 	}
 
 
-	
+
 
 	gfx.DrawCircle(((habitat.hutLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, habitat.hutHeightRadius, habitat.hutColor);
 	gfx.DrawCircle(((habitat.doorLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, habitat.doorHeightRadius, habitat.doorColor);
 	if (player.isSleeping)
 	{
-		gfx.DrawRectWithinCircle((player.centerBotLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue, ((habitat.windowLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, habitat.windowRadius);
+		gfx.DrawRectWithinCircle((player.centerBotLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue, ((habitat.windowLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, habitat.windowRadius, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
 	}
 	gfx.DrawCircle(((habitat.windowLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, habitat.windowRadius, habitat.windowColor, 0.75f);
 
 
 	if (!player.isSleeping)
 	{
-		gfx.DrawRect((player.centerBotLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue);
+		gfx.DrawRect((player.centerBotLoc + player.transformShift - camera.loc) * screenTransformFlip + screenTransformShift, (int)player.width, (int)player.height, Colors::Blue, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
 	}
 	//gfx.DrawCircle((player.centerBotLoc + player.transformShiftCircle - camera.loc) * screenTransformFlip + screenTransformShift, 2.0f, Colors::Red);
 
@@ -387,48 +553,139 @@ void Game::ComposeFrame()
 	gfx.DrawCircle(((world.loc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, world.radius, Colors::Gray);
 
 
-	// GUI
-
-	if (spaceship.arrivalTime > 0)
-	{
-		spaceship.arrivalTime -= ((spaceship.zChange / 5.0f) / 60.0f);
-	}
-	else
-	{
-		spaceship.arrivalTime = 0;
-	}
 	
 
-	int arrivalTimeMin = (int)spaceship.arrivalTime;
-	int arrivalTimeSec = (int)((spaceship.arrivalTime - (float)arrivalTimeMin) * 60.0f);
-
-	RetroContent::DrawString(gfx, std::string("STARSHIP ARRIVAL"), { 1175.0f, 50.0f }, 2, Colors::White);
-	RetroContent::DrawString(gfx, std::to_string(arrivalTimeMin) + " MIN  " + std::to_string(arrivalTimeSec) + " SEC", { 1425.0f, 50.0f }, 2, Colors::White);
-
-	RetroContent::DrawString(gfx, std::string("OXYGEN LEVEL"), { 1375.0f, 100.0f }, 2, dome.atmosphere.oxygenColor);
-	RetroContent::DrawString(gfx, std::to_string((int)(dome.atmosphere.oxygenLevel + 0.5f)) + "%", { 1525.0f, 100.0f }, 2, dome.atmosphere.oxygenColor);
-
-	RetroContent::DrawString(gfx, std::string("CO2 LEVEL"), { 1375.0f, 150.0f }, 2, dome.atmosphere.carbonDioxideColor);
-	RetroContent::DrawString(gfx, std::to_string((int)(dome.atmosphere.carbonDioxideLevel + 0.5f)) + "%", { 1525.0f, 150.0f }, 2, dome.atmosphere.carbonDioxideColor);
-	
-	RetroContent::DrawString(gfx, std::string("ENERGY LEVEL"), { 1375.0f, 200.0f }, 2, Colors::Cyan);
-	RetroContent::DrawString(gfx, std::to_string((int)(player.energy + 0.5f)) + "%", { 1525.0f, 200.0f }, 2, Colors::Cyan);
-
-	RetroContent::DrawString(gfx, std::string("FOOD PRODUCED"), { 1375.0f, 250.0f }, 2, Colors::Red);
-	RetroContent::DrawString(gfx, std::to_string((int)(player.foodStored)) + "%", { 1525.0f, 250.0f }, 2, Colors::Red);
-
-
-	if (player.isCutting)
+	if (gamestate == GAMESTATE_RUNNING)
 	{
-		for (int i = 0; i < plants.size(); i++)
+		// GUI
+
+		
+
+
+		int arrivalTimeMin = (int)spaceship.arrivalTime;
+		int arrivalTimeSec = (int)((spaceship.arrivalTime - (float)arrivalTimeMin) * 60.0f);
+
+		RetroContent::DrawString(gfx, std::string("STARSHIP ARRIVAL"), { 1175.0f, 50.0f }, 2, Colors::White);
+		RetroContent::DrawString(gfx, std::to_string(arrivalTimeMin) + " MIN  " + std::to_string(arrivalTimeSec) + " SEC", { 1425.0f, 50.0f }, 2, Colors::White);
+
+		RetroContent::DrawString(gfx, std::string("OXYGEN LEVEL"), { 1375.0f, 100.0f }, 2, dome.atmosphere.oxygenColor);
+		RetroContent::DrawString(gfx, std::to_string((int)(dome.atmosphere.oxygenLevel + 0.5f)) + "%", { 1525.0f, 100.0f }, 2, dome.atmosphere.oxygenColor);
+
+		RetroContent::DrawString(gfx, std::string("CO2 LEVEL"), { 1375.0f, 150.0f }, 2, dome.atmosphere.carbonDioxideColor);
+		RetroContent::DrawString(gfx, std::to_string((int)(dome.atmosphere.carbonDioxideLevel + 0.5f)) + "%", { 1525.0f, 150.0f }, 2, dome.atmosphere.carbonDioxideColor);
+
+		RetroContent::DrawString(gfx, std::string("ENERGY LEVEL"), { 1375.0f, 200.0f }, 2, Colors::Cyan);
+		RetroContent::DrawString(gfx, std::to_string((int)(player.energy + 0.5f)) + "%", { 1525.0f, 200.0f }, 2, Colors::Cyan);
+
+		RetroContent::DrawString(gfx, std::string("FOOD PRODUCED"), { 1375.0f, 250.0f }, 2, Colors::Red);
+		RetroContent::DrawString(gfx, std::to_string((int)(player.foodStored)) + "%", { 1525.0f, 250.0f }, 2, Colors::Red);
+
+
+		if (player.isCutting)
 		{
-			if (plants[i].isBeingCut)
+			for (int i = 0; i < plants.size(); i++)
 			{
-				gfx.DrawRect((player.centerBotLoc + Vec2(-60.0f, -60.0f) - camera.loc) * screenTransformFlip + screenTransformShift, 120.0f, 15.0f, Colors::Black);
-				gfx.DrawRect((player.centerBotLoc + Vec2(-57.5f, -62.5f) - camera.loc) * screenTransformFlip + screenTransformShift, 115.0f * (plants[i].currentCutAmount / (plants[i].maxCutAmount* (plants[i].currentSize / plants[i].maxSize))), 10.0f, Colors::Blue);
-				break;
+				if (plants[i].isBeingCut)
+				{
+					gfx.DrawRect((player.centerBotLoc + Vec2(-60.0f, -60.0f) - camera.loc) * screenTransformFlip + screenTransformShift, 120.0f, 15.0f, Colors::Black);
+					gfx.DrawRect((player.centerBotLoc + Vec2(-57.5f, -62.5f) - camera.loc) * screenTransformFlip + screenTransformShift, 115.0f * (plants[i].currentCutAmount / (plants[i].maxCutAmount* (plants[i].currentSize / plants[i].maxSize))), 10.0f, Colors::Blue);
+					break;
+				}
+			}
+		}
+
+		if (!player.isAlive)
+		{
+			RetroContent::DrawString(gfx, std::string("ALAS"), { 800.0f, 100.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
+			RetroContent::DrawString(gfx, std::string("YOU ARE NO LONGER"), { 800.0f, 280.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
+
+			RetroContent::DrawString(gfx, std::string("RESTART"), { 800.0f, 600.0f }, 6, selectedOption == 0 ? Colors::Red : Colors::Yellow, fadeInAlpha);
+			RetroContent::DrawString(gfx, std::string("MAIN MENU"), { 800.0f, 750.0f }, 6, selectedOption == 1 ? Colors::Red : Colors::Yellow, fadeInAlpha);
+			
+			if (selectedOption == 0)
+			{
+				gfx.DrawCircle({ 500.0f, 625.0f }, 20.0f, Colors::Red, fadeInAlpha);
+				gfx.DrawCircle({ 1100.0f, 625.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			}
+			else
+			{
+				gfx.DrawCircle({ 500.0f, 775.0f }, 20.0f, Colors::Red, fadeInAlpha);
+				gfx.DrawCircle({ 1100.0f, 775.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			}
+			
+			
+
+
+			if (currentFadeInEffect < maxFadeInEffect)
+			{
+				currentFadeInEffect += 1.0f;
+			}
+			else
+			{
+				currentFadeInEffect = maxFadeInEffect;
 			}
 		}
 	}
 
+	if (gamestate == GAMESTATE::GAMESTATE_INGAMEMENU)
+	{
+		RetroContent::DrawString(gfx, std::string("GAME PAUSED"), { 800.0f, 190.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
+
+		RetroContent::DrawString(gfx, std::string("RESTART"), { 800.0f, 600.0f }, 6, selectedOption == 0 ? Colors::Red : Colors::Yellow, fadeInAlpha);
+		RetroContent::DrawString(gfx, std::string("MAIN MENU"), { 800.0f, 750.0f }, 6, selectedOption == 1 ? Colors::Red : Colors::Yellow, fadeInAlpha);
+
+		if (selectedOption == 0)
+		{
+			gfx.DrawCircle({ 500.0f, 625.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 1100.0f, 625.0f }, 20.0f, Colors::Red, fadeInAlpha);
+		}
+		else
+		{
+			gfx.DrawCircle({ 500.0f, 775.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 1100.0f, 775.0f }, 20.0f, Colors::Red, fadeInAlpha);
+		}
+
+		if (currentFadeInEffect < maxFadeInEffect)
+		{
+			currentFadeInEffect += 4.0f;
+		}
+		else
+		{
+			currentFadeInEffect = maxFadeInEffect;
+		}
+	}
+	else if (gamestate == GAMESTATE::GAMESTATE_STARTMENU)
+	{
+		RetroContent::DrawString(gfx, std::string("GARDENERS"), { 800.0f, 100.0f }, 10, Color(250, 210, 90), sqrt(fadeInAlpha));
+		RetroContent::DrawString(gfx, std::string("OF THE"), { 800.0f, 210.0f }, 4, Color(250, 210, 90), sqrt(fadeInAlpha));
+		RetroContent::DrawString(gfx, std::string("GALAXY"), { 800.0f, 280.0f }, 10, Color(250, 210, 90), sqrt(fadeInAlpha));
+
+
+		RetroContent::DrawString(gfx, std::string("START GAME"), { 800.0f, 600.0f }, 6, selectedOption == 0 ? Colors::Red : Colors::Yellow, fadeInAlpha);
+		RetroContent::DrawString(gfx, std::string("EXIT"), { 800.0f, 750.0f }, 6, selectedOption == 1 ? Colors::Red : Colors::Yellow, fadeInAlpha);
+
+		if (selectedOption == 0)
+		{
+			gfx.DrawCircle({ 500.0f, 625.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 1100.0f, 625.0f }, 20.0f, Colors::Red, fadeInAlpha);
+		}
+		else
+		{
+			gfx.DrawCircle({ 500.0f, 775.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 1100.0f, 775.0f }, 20.0f, Colors::Red, fadeInAlpha);
+		}
+
+		if (currentFadeInEffect < maxFadeInEffect)
+		{
+			currentFadeInEffect += 4.0f;
+		}
+		else
+		{
+			currentFadeInEffect = maxFadeInEffect;
+		}
+	}
+	else
+	{
+		currentFadeInEffect = 0.0f;
+	}
 }
