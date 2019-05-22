@@ -32,7 +32,9 @@
 #include "Habitat.h"
 #include "Spaceship.h"
 #include "RetroContent.h"
+#include "Sound.h"
 #include <vector>
+#include <chrono>
 
 enum GAMESTATE
 {
@@ -105,4 +107,22 @@ private:
 	bool isNextSeedPressed = false;
 	bool isPrevSeenPressed = false;
 
+	std::vector<Sound> musicTracks;
+	std::vector<float> musicTrackLengths;
+	std::vector<float> musicMaxVolumes;
+	int currentMusicTrack = 0;
+
+	float musicTimer = 0.0f;
+
+	//Sound startScreenMusic = Sound(L"04 All of Us.mp3");
+
+	float currentMasterVolume = 0.1f;
+	float maxMasterVolume = 0.5f;
+	bool soundVolumeIncreasing = true;
+
+	std::chrono::system_clock::time_point start;
+	std::chrono::system_clock::time_point end;
+
+	Sound choppingSound = Sound(L"chopping.wav", Sound::LoopType::AutoFullSound);
+	bool isChoppingSoundOn = false;
 };

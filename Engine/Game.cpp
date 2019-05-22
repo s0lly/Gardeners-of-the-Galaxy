@@ -20,6 +20,7 @@
  ******************************************************************************************/
 #include "MainWindow.h"
 #include "Game.h"
+#include <thread>
 
 Game::Game( MainWindow& wnd )
 	:
@@ -30,6 +31,50 @@ Game::Game( MainWindow& wnd )
 	{
 		starmap.push_back(Star{ Vec2((float)(rand() % 4001) - 2000, (float)(rand() % 4001) - 2000), (float)(rand() % 3 + 1), Color{ (unsigned char)(rand() % 256), (unsigned char)(rand() % 256), (unsigned char)(rand() % 256) } });
 	}
+
+
+	musicTracks = std::vector<Sound>(5);
+
+	std::vector<std::wstring> musicTrackNames;
+	musicTrackNames.push_back(L"04 All of Us.mp3");
+	musicTrackNames.push_back(L"11 HHavok-intro.mp3");
+	musicTrackNames.push_back(L"07 We're the Resistors.mp3");
+	musicTrackNames.push_back(L"10 Arpanauts.mp3");
+	musicTrackNames.push_back(L"15 Prologue.mp3");
+	
+
+	musicTrackLengths.push_back(177.0f);
+	musicTrackLengths.push_back(68.0f);
+	musicTrackLengths.push_back(141.0f);
+	musicTrackLengths.push_back(196.0f);
+	musicTrackLengths.push_back(205.0f);
+	
+
+	musicMaxVolumes.push_back(0.4f);
+	musicMaxVolumes.push_back(0.2f);
+	musicMaxVolumes.push_back(0.2f);
+	musicMaxVolumes.push_back(0.2f);
+	musicMaxVolumes.push_back(0.2f);
+
+	auto musicTracksPtr = &musicTracks;
+	auto musicTrackNamesPtr = &musicTrackNames;
+
+	std::vector<std::thread> threadList2;
+	for (int k = 0; k < 5; k++)
+	{
+		threadList2.push_back(std::thread([musicTracksPtr, musicTrackNamesPtr, k]()
+		{
+			(*musicTracksPtr)[k] = Sound((*musicTrackNamesPtr)[k]);
+		}));
+	}
+	std::for_each(threadList2.begin(), threadList2.end(), std::mem_fn(&std::thread::join));
+
+	musicTracks[0].Play(1.0f, musicMaxVolumes[0]);
+
+	end = std::chrono::system_clock::now();
+	std::chrono::duration<float> elapsedTime = end - start;
+	start = end;
+	float dt = elapsedTime.count();
 	
 }
 
@@ -47,6 +92,13 @@ void Game::ProcessInput()
 {
 	if (gamestate == GAMESTATE_STARTSCREEN)
 	{
+		if (currentMasterVolume < maxMasterVolume)
+		{
+			currentMasterVolume *= 1.2f;
+			currentMasterVolume = currentMasterVolume > maxMasterVolume ? maxMasterVolume : currentMasterVolume;
+		}
+		SoundSystem::SetMasterVolume(currentMasterVolume);
+
 		if (wnd.kbd.KeyIsPressed(VK_ESCAPE))
 		{
 			if (!isPausedPressed)
@@ -54,6 +106,8 @@ void Game::ProcessInput()
 				gamestate = GAMESTATE_STARTMENU;
 				isPausedPressed = true;
 				selectedOption = 0;
+				soundVolumeIncreasing = false;
+				musicTimer = 0.0f;
 			}
 		}
 		else
@@ -63,6 +117,7 @@ void Game::ProcessInput()
 	}
 	else if (gamestate == GAMESTATE_RUNNING)
 	{
+
 		Mat2 playerRotation = Mat2::RotationMatrix(player.angle);
 
 		if (!player.isSleeping)
@@ -282,6 +337,66 @@ void Game::ProcessInput()
 
 void Game::UpdateModel()
 {
+	end = std::chrono::system_clock::now();
+	std::chrono::duration<float> elapsedTime = end - start;
+	start = end;
+	float dt = elapsedTime.count();
+
+	musicTimer += dt;
+	
+	if (gamestate != GAMESTATE_STARTMENU)
+	{
+		if (currentMusicTrack == 0)
+		{
+			if (currentMasterVolume > 0.01f)
+			{
+				currentMasterVolume *= 0.90;
+			}
+			else
+			{
+				currentMusicTrack = 1;
+				musicTracks[0].StopAll();
+				musicTracks[currentMusicTrack].Play(1.0f, musicMaxVolumes[currentMusicTrack]);
+				soundVolumeIncreasing = true;
+				musicTimer = 0.0f;
+			}
+		}
+		else
+		{
+			if (currentMasterVolume < maxMasterVolume)
+			{
+				currentMasterVolume *= 1.05;
+			}
+			else
+			{
+				currentMasterVolume = maxMasterVolume;
+			}
+
+			if (musicTimer > musicTrackLengths[currentMusicTrack])
+			{
+				musicTracks[currentMusicTrack].StopAll();
+				currentMusicTrack++;
+				if (currentMusicTrack == musicTracks.size())
+				{
+					currentMusicTrack = 1;
+				}
+				musicTracks[currentMusicTrack].Play(1.0f, musicMaxVolumes[currentMusicTrack]);
+				musicTimer = 0.0f;
+			}
+		}
+	}
+	//else
+	//{
+	//	if (musicTimer > musicTrackLengths[currentMusicTrack])
+	//	{
+	//		musicTracks[currentMusicTrack].StopAll();
+	//		musicTracks[currentMusicTrack].Play();
+	//		musicTimer = 0.0f;
+	//	}
+	//}
+
+	SoundSystem::SetMasterVolume(currentMasterVolume);
+
 	if (gamestate == GAMESTATE::GAMESTATE_STARTSCREEN)
 	{
 		if (fadingIn)
@@ -302,7 +417,10 @@ void Game::UpdateModel()
 		{
 			currentFadeInEffect = 0.0f;
 			gamestate = GAMESTATE::GAMESTATE_STARTMENU;
+			soundVolumeIncreasing = false;
 		}
+
+		
 	}
 	else if (gamestate == GAMESTATE_RESTARTING)
 	{
@@ -332,7 +450,7 @@ void Game::UpdateModel()
 
 		Vec2 newPosition = player.centerBotLoc + player.velocity;
 
-		if (!((newPosition - world.loc).GetMagnitudeSqrd() < (world.radius * world.radius)))
+		if ((newPosition - world.loc).GetMagnitudeSqrd() > (world.radius * world.radius))
 		{
 			player.centerBotLoc = newPosition;
 		}
@@ -340,9 +458,11 @@ void Game::UpdateModel()
 		{
 			Vec2 normal = player.centerBotLoc / world.radius;
 			player.velocity = player.velocity - normal * 2.0f * (player.velocity.Dot(normal));
+			newPosition = (newPosition - world.loc).GetNormalized() * (world.radius + 0.01f);
+			player.centerBotLoc = newPosition;
 		}
 
-		if (!((newPosition + Vec2{ player.height * sin(player.angle), player.height * cos(player.angle) } -dome.loc).GetMagnitudeSqrd() > (dome.radius * dome.radius)))
+		if ((newPosition + Vec2{ player.height * sin(player.angle), player.height * cos(player.angle) } - dome.loc).GetMagnitudeSqrd() < (dome.radius * dome.radius))
 		{
 			player.centerBotLoc = newPosition;
 		}
@@ -352,10 +472,10 @@ void Game::UpdateModel()
 			player.velocity = player.velocity - normal * 2.0f * (player.velocity.Dot(normal));
 		}
 
-		if (vectorFromPlayerToWorld.GetMagnitude() < 800.0f)
-		{
-			player.velocity = player.velocity - vectorFromPlayerToWorld.GetNormalized() * (800.0f - vectorFromPlayerToWorld.GetMagnitude()) * 0.5f;
-		}
+		//if (vectorFromPlayerToWorld.GetMagnitude() < 800.0f)
+		//{
+		//	player.velocity = player.velocity - vectorFromPlayerToWorld.GetNormalized() * (800.0f - vectorFromPlayerToWorld.GetMagnitude()) * 0.5f;
+		//}
 
 		float sinAngle = sin(player.animationAngle);
 
@@ -377,6 +497,8 @@ void Game::UpdateModel()
 
 		// player cutting applied to plants
 
+		bool plantBeingCut = false;
+
 		if (player.isCutting)
 		{
 			Vec2 cuttingLocation = player.centerBotLoc + (player.isFacingRight ? Vec2(40.0f, 10.0f) : Vec2(-40.0f, 10.0f)) * Mat2::RotationMatrix(player.angle);
@@ -391,6 +513,8 @@ void Game::UpdateModel()
 
 					plants[i].currentCutAmount += 1.0f;
 
+					plantBeingCut = true;
+
 				}
 				else
 				{
@@ -398,6 +522,31 @@ void Game::UpdateModel()
 					plants[i].isBeingCut = false;
 				}
 			}
+
+			if (plantBeingCut)
+			{
+				if (!isChoppingSoundOn)
+				{
+					choppingSound.Play(1.0f, 0.5f);
+					isChoppingSoundOn = true;
+				}
+			}
+			else
+			{
+				choppingSound.StopAll();
+				isChoppingSoundOn = false;
+			}
+		}
+		else
+		{
+			for (int i = 0; i < plants.size(); i++)
+			{
+				plants[i].currentCutAmount = 0.0f;
+				plants[i].isBeingCut = false;
+			}
+
+			choppingSound.StopAll();
+			isChoppingSoundOn = false;
 		}
 
 
@@ -514,6 +663,9 @@ void Game::UpdateModel()
 		{
 			//gameOver = true;
 			gamestate = GAMESTATE_RESTARTMENU;
+
+			choppingSound.StopAll();
+			isChoppingSoundOn = false;
 		}
 
 
@@ -621,9 +773,9 @@ void Game::ComposeFrame()
 
 	if (player.isSleeping)
 	{
-		RetroContent::DrawString(gfx, std::string("Z"), { 818.0f, 390.0f }, 2, Colors::Yellow, ((cosf((float)player.sleepAnimation / 10.0f) + 1) / 2.0f) * (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
-		((player.sleepAnimation / 10.0f) > (PI / 4.0f)) ? RetroContent::DrawString(gfx, std::string("Z"), { 832.0f, 375.0f }, 2, Colors::Yellow, ((sinf((float)player.sleepAnimation / 10.0f + PI / 4.0f) + 1) / 2.0f) * (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f))) : true;
-		((player.sleepAnimation / 10.0f) > (PI / 2.0f)) ? RetroContent::DrawString(gfx, std::string("Z"), { 844.0f, 360.0f }, 2, Colors::Yellow, ((sinf((float)player.sleepAnimation / 10.0f) + 1) / 2.0f) * (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f))) : true;
+		RetroContent::DrawString(gfx, std::string("Z"), { 818.0f, 390.0f }, 2, Colors::Yellow, ((cosf((float)player.sleepAnimation / 25.0f) + 1) / 2.0f) * (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+		((player.sleepAnimation / 10.0f) > (PI / 4.0f)) ? RetroContent::DrawString(gfx, std::string("Z"), { 832.0f, 375.0f }, 2, Colors::Yellow, ((sinf((float)player.sleepAnimation / 25.0f + PI / 4.0f) + 1) / 2.0f) * (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f))) : true;
+		((player.sleepAnimation / 10.0f) > (PI / 2.0f)) ? RetroContent::DrawString(gfx, std::string("Z"), { 844.0f, 360.0f }, 2, Colors::Yellow, ((sinf((float)player.sleepAnimation / 25.0f) + 1) / 2.0f) * (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f))) : true;
 		player.sleepAnimation++;
 	}
 	else
@@ -634,8 +786,11 @@ void Game::ComposeFrame()
 	if (!player.isSleeping)
 	{
 		gfx.DrawCircle((player.headLoc - camera.loc) * screenTransformFlip + screenTransformShift, player.headRadius, Color(100, 50, 255), (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+
 		if (player.isFacingRight)
 		{
+			gfx.DrawCircle((player.headLoc + Vec2{ 4.0f, 2.0f } - camera.loc) * screenTransformFlip + screenTransformShift, player.headRadius / 4.0f, Colors::Yellow, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+
 			gfx.DrawCircle((player.leftArmLoc - camera.loc) * screenTransformFlip + screenTransformShift, player.leftArmRadius, Color(100, 0, 205), (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
 			gfx.DrawCircle((player.leftLegLoc - camera.loc) * screenTransformFlip + screenTransformShift, player.leftLegRadius, Color(0, 100, 150), (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
 			gfx.DrawCircle((player.bodyLoc - camera.loc) * screenTransformFlip + screenTransformShift, player.bodyRadius, Colors::Blue, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
@@ -645,6 +800,8 @@ void Game::ComposeFrame()
 		}
 		else
 		{
+			gfx.DrawCircle((player.headLoc + Vec2{ -4.0f, 2.0f } -camera.loc) * screenTransformFlip + screenTransformShift, player.headRadius / 4.0f, Colors::Yellow, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+
 			gfx.DrawCircle((player.rightArmLoc - camera.loc) * screenTransformFlip + screenTransformShift, player.rightArmRadius, Color(150, 50, 255), (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
 			gfx.DrawCircle((player.rightLegLoc - camera.loc) * screenTransformFlip + screenTransformShift, player.rightLegRadius, Color(50, 150, 200), (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
 			gfx.DrawCircle((player.bodyLoc - camera.loc) * screenTransformFlip + screenTransformShift, player.bodyRadius, Colors::Blue, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
@@ -659,7 +816,7 @@ void Game::ComposeFrame()
 		Vec2 cuttingLocation = player.centerBotLoc + (player.isFacingRight ? Vec2(40.0f, 10.0f) : Vec2(-40.0f, 10.0f)) * Mat2::RotationMatrix(player.angle);
 
 		Vec2 axeHitLoc = player.isFacingRight ? Vec2(40.0f, 10.0f) : Vec2(-40.0f, 10.0f);
-		gfx.DrawCircle((cuttingLocation - camera.loc) * cameraRotation.GetTranspose() * screenTransformFlip + screenTransformShift, 15.0f, Colors::Red);
+		gfx.DrawCircle((cuttingLocation - camera.loc) * cameraRotation.GetTranspose() * screenTransformFlip + screenTransformShift, 15.0f, Colors::Red, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
 	}
 
 
@@ -709,8 +866,8 @@ void Game::ComposeFrame()
 			{
 				if (plants[i].isBeingCut)
 				{
-					gfx.DrawRect((player.centerBotLoc + Vec2(-60.0f, -60.0f) - camera.loc) * screenTransformFlip + screenTransformShift, 120.0f, 15.0f, Colors::Black);
-					gfx.DrawRect((player.centerBotLoc + Vec2(-57.5f, -62.5f) - camera.loc) * screenTransformFlip + screenTransformShift, 115.0f * (plants[i].currentCutAmount / (plants[i].maxCutAmount* (plants[i].currentSize / plants[i].maxSize))), 10.0f, Colors::Blue);
+					gfx.DrawRect((player.centerBotLoc + Vec2(-60.0f, -60.0f) - camera.loc) * screenTransformFlip + screenTransformShift, 120.0f, 15.0f, Colors::Black, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+					gfx.DrawRect((player.centerBotLoc + Vec2(-57.5f, -62.5f) - camera.loc) * screenTransformFlip + screenTransformShift, 115.0f * (plants[i].currentCutAmount / (plants[i].maxCutAmount* (plants[i].currentSize / plants[i].maxSize))), 10.0f, Colors::Blue, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
 					break;
 				}
 			}
@@ -719,7 +876,7 @@ void Game::ComposeFrame()
 
 	if (gamestate == GAMESTATE::GAMESTATE_STARTSCREEN)
 	{
-		RetroContent::DrawString(gfx, std::string("BY"), { 800.0f, 100.0f }, 6, Color(128, 0, 128), sqrt(fadeInAlpha));
+		RetroContent::DrawString(gfx, std::string("BY"), { 800.0f, 200.0f }, 4, Color(128, 0, 128), sqrt(fadeInAlpha));
 		RetroContent::DrawString(gfx, std::string("SOLLY"), { 800.0f, 280.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
 	}
 	else if (gamestate == GAMESTATE::GAMESTATE_RESTARTMENU)
@@ -728,7 +885,7 @@ void Game::ComposeFrame()
 
 		if (player.result == WINLOSE::LOSEBYAIR)
 		{
-			loseCondition = "TOO MUCH OF THE OLD CARBON";
+			loseCondition = "CARBONATED OUT";
 		}
 		if (player.result == WINLOSE::LOSEBYBREAK)
 		{
@@ -753,13 +910,13 @@ void Game::ComposeFrame()
 
 		if (selectedOption == 0)
 		{
-			gfx.DrawCircle({ 500.0f, 655.0f }, 20.0f, Colors::Red, fadeInAlpha);
-			gfx.DrawCircle({ 1100.0f, 655.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 500.0f, 670.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 1100.0f, 670.0f }, 20.0f, Colors::Red, fadeInAlpha);
 		}
 		else
 		{
-			gfx.DrawCircle({ 500.0f, 775.0f }, 20.0f, Colors::Red, fadeInAlpha);
-			gfx.DrawCircle({ 1100.0f, 775.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 500.0f, 770.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 1100.0f, 770.0f }, 20.0f, Colors::Red, fadeInAlpha);
 		}
 
 
@@ -783,13 +940,13 @@ void Game::ComposeFrame()
 
 		if (selectedOption == 0)
 		{
-			gfx.DrawCircle({ 500.0f, 655.0f }, 20.0f, Colors::Red, fadeInAlpha);
-			gfx.DrawCircle({ 1100.0f, 655.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 500.0f, 670.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 1100.0f, 670.0f }, 20.0f, Colors::Red, fadeInAlpha);
 		}
 		else
 		{
-			gfx.DrawCircle({ 500.0f, 775.0f }, 20.0f, Colors::Red, fadeInAlpha);
-			gfx.DrawCircle({ 1100.0f, 775.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 500.0f, 770.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 1100.0f, 770.0f }, 20.0f, Colors::Red, fadeInAlpha);
 		}
 
 		if (currentFadeInEffect < maxFadeInEffect)
@@ -813,15 +970,24 @@ void Game::ComposeFrame()
 		RetroContent::DrawString(gfx, std::string("START GAME"), { 800.0f, 650.0f }, 6, selectedOption == 0 ? Colors::Red : Colors::Yellow, fadeInAlpha);
 		RetroContent::DrawString(gfx, std::string("EXIT"), { 800.0f, 750.0f }, 6, selectedOption == 1 ? Colors::Red : Colors::Yellow, fadeInAlpha);
 
+
+		RetroContent::DrawString(gfx, std::string("     CONTROLS    "), { 1400.0f, 50.0f }, 3, Colors::Magenta, sqrt(fadeInAlpha));
+		RetroContent::DrawString(gfx, std::string("MOVEMENT  W A S D"), { 1400.0f, 125.0f }, 2, Colors::Magenta, sqrt(fadeInAlpha));
+		RetroContent::DrawString(gfx, std::string("	SELECT	   Q E  "), { 1400.0f, 175.0f }, 2, Colors::Magenta, sqrt(fadeInAlpha));
+		RetroContent::DrawString(gfx, std::string("PLANTING   SPACE "), { 1400.0f, 225.0f }, 2, Colors::Magenta, sqrt(fadeInAlpha));
+		RetroContent::DrawString(gfx, std::string("CHOPPING  CONTROL"), { 1400.0f, 275.0f }, 2, Colors::Magenta, sqrt(fadeInAlpha));
+		RetroContent::DrawString(gfx, std::string("  MENU      ESC  "), { 1400.0f, 325.0f }, 2, Colors::Magenta, sqrt(fadeInAlpha));
+
+
 		if (selectedOption == 0)
 		{
-			gfx.DrawCircle({ 500.0f, 655.0f }, 20.0f, Colors::Red, fadeInAlpha);
-			gfx.DrawCircle({ 1100.0f, 655.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 500.0f, 670.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 1100.0f, 670.0f }, 20.0f, Colors::Red, fadeInAlpha);
 		}
 		else
 		{
-			gfx.DrawCircle({ 500.0f, 775.0f }, 20.0f, Colors::Red, fadeInAlpha);
-			gfx.DrawCircle({ 1100.0f, 775.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 500.0f, 770.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 1100.0f, 770.0f }, 20.0f, Colors::Red, fadeInAlpha);
 		}
 
 		if (currentFadeInEffect < maxFadeInEffect)
