@@ -80,12 +80,40 @@ void Game::ProcessInput()
 				player.isMoving = true;
 			}
 
+			if (wnd.kbd.KeyIsPressed('Q'))
+			{
+				if (!isPrevSeenPressed)
+				{
+					player.selectedSeed = (PLANT_TYPE)(player.selectedSeed - 1);
+					isPrevSeenPressed = true;
+				}
+			}
+			else
+			{
+				isPrevSeenPressed = false;
+			}
+			if (wnd.kbd.KeyIsPressed('E'))
+			{
+				if (!isNextSeedPressed)
+				{
+					player.selectedSeed = (PLANT_TYPE)(player.selectedSeed + 1);
+					isNextSeedPressed = true;
+				}
+			}
+			else
+			{
+				isNextSeedPressed = false;
+			}
+
+			player.selectedSeed = (PLANT_TYPE)(player.selectedSeed < 0 ? 0 : player.selectedSeed);
+			player.selectedSeed = (PLANT_TYPE)(player.selectedSeed >= MAX_PLANT_NUM ? MAX_PLANT_NUM - 1 : player.selectedSeed);
+
 
 			if (wnd.kbd.KeyIsPressed(VK_SPACE))
 			{
 				if (player.centerBotLoc.GetMagnitude() - world.radius < 10.0f)
 				{
-					plants.push_back(Plant(player.centerBotLoc.GetNormalized() * world.radius, PLANT_TYPE_CARBONEATER, plants.size()));
+					plants.push_back(Plant(player.centerBotLoc.GetNormalized() * world.radius, player.selectedSeed, plants.size()));
 				}
 			}
 
@@ -105,14 +133,6 @@ void Game::ProcessInput()
 			else
 			{
 				player.isCutting = false;
-			}
-
-			if (wnd.kbd.KeyIsPressed(VK_SHIFT))
-			{
-				if (player.centerBotLoc.GetMagnitude() - world.radius < 10.0f)
-				{
-					plants.push_back(Plant(player.centerBotLoc.GetNormalized() * world.radius, PLANT_TYPE_BIGCARBONEATER, plants.size()));
-				}
 			}
 
 			if (wnd.kbd.KeyIsPressed(VK_ESCAPE))
@@ -445,6 +465,7 @@ void Game::UpdateModel()
 			if (plants[i].currentSize > 200.0f)
 			{
 				player.isAlive = false;
+				player.result = WINLOSE::LOSEBYBREAK;
 			}
 		}
 
@@ -542,19 +563,7 @@ void Game::ComposeFrame()
 
 	for (int i = 0; i < plants.size(); i++)
 	{
-		Color c;
-
-		if (plants[i].type == PLANT_TYPE_CARBONEATER)
-		{
-			c = Colors::Green;
-		}
-		else
-		{
-			c = Colors::Cyan;
-		}
-
-		gfx.DrawCircle(((plants[i].centerBotLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, plants[i].currentSize, c);
-
+		gfx.DrawCircle(((plants[i].centerBotLoc - camera.loc) * cameraRotation.GetTranspose()) * screenTransformFlip + screenTransformShift, plants[i].currentSize, plants[i].color);
 	}
 
 
@@ -650,6 +659,12 @@ void Game::ComposeFrame()
 		RetroContent::DrawString(gfx, std::to_string((int)(player.foodStored)) + "%", { 1525.0f, 250.0f }, 2, Colors::Red);
 
 
+		RetroContent::DrawString(gfx, "SEED TYPE", { 800.0f, 680.0f }, 3, Colors::Red);
+		gfx.DrawRect(Vec2(760.0f, 720.0f), 80.0f, 80.0f, Colors::Black);
+		gfx.DrawRect(Vec2(765.0f, 725.0f), 70.0f, 70.0f, player.GetSelectedSeedColor());
+
+
+
 		if (player.isCutting)
 		{
 			for (int i = 0; i < plants.size(); i++)
@@ -665,16 +680,37 @@ void Game::ComposeFrame()
 	}
 	if (gamestate == GAMESTATE::GAMESTATE_RESTARTMENU)
 	{
+		std::string loseCondition;
+
+		if (player.result == WINLOSE::LOSEBYAIR)
+		{
+			loseCondition = "TOO MUCH OF THE OLD CARBON";
+		}
+		if (player.result == WINLOSE::LOSEBYBREAK)
+		{
+			loseCondition = "DOME BREACH";
+		}
+		if (player.result == WINLOSE::LOSEBYFOOD)
+		{
+			loseCondition = "DEATH BY FOOD POLICE";
+		}
+		if (player.result == WINLOSE::LOSEBYENERGY)
+		{
+			loseCondition = "TOO TIRED TO GO ON";
+		}
+
 		RetroContent::DrawString(gfx, std::string("ALAS"), { 800.0f, 100.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
 		RetroContent::DrawString(gfx, std::string("YOU ARE NO LONGER"), { 800.0f, 280.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
 
-		RetroContent::DrawString(gfx, std::string("RESTART"), { 800.0f, 600.0f }, 6, selectedOption == 0 ? Colors::Red : Colors::Yellow, fadeInAlpha);
+		RetroContent::DrawString(gfx, loseCondition, { 800.0f, 460.0f }, 12, Colors::Red, sqrt(fadeInAlpha));
+
+		RetroContent::DrawString(gfx, std::string("RESTART"), { 800.0f, 650.0f }, 6, selectedOption == 0 ? Colors::Red : Colors::Yellow, fadeInAlpha);
 		RetroContent::DrawString(gfx, std::string("MAIN MENU"), { 800.0f, 750.0f }, 6, selectedOption == 1 ? Colors::Red : Colors::Yellow, fadeInAlpha);
 
 		if (selectedOption == 0)
 		{
-			gfx.DrawCircle({ 500.0f, 625.0f }, 20.0f, Colors::Red, fadeInAlpha);
-			gfx.DrawCircle({ 1100.0f, 625.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 500.0f, 655.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 1100.0f, 655.0f }, 20.0f, Colors::Red, fadeInAlpha);
 		}
 		else
 		{
@@ -698,13 +734,13 @@ void Game::ComposeFrame()
 	{
 		RetroContent::DrawString(gfx, std::string("GAME PAUSED"), { 800.0f, 190.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
 
-		RetroContent::DrawString(gfx, std::string("RESTART"), { 800.0f, 600.0f }, 6, selectedOption == 0 ? Colors::Red : Colors::Yellow, fadeInAlpha);
+		RetroContent::DrawString(gfx, std::string("RESTART"), { 800.0f, 650.0f }, 6, selectedOption == 0 ? Colors::Red : Colors::Yellow, fadeInAlpha);
 		RetroContent::DrawString(gfx, std::string("MAIN MENU"), { 800.0f, 750.0f }, 6, selectedOption == 1 ? Colors::Red : Colors::Yellow, fadeInAlpha);
 
 		if (selectedOption == 0)
 		{
-			gfx.DrawCircle({ 500.0f, 625.0f }, 20.0f, Colors::Red, fadeInAlpha);
-			gfx.DrawCircle({ 1100.0f, 625.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 500.0f, 655.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 1100.0f, 655.0f }, 20.0f, Colors::Red, fadeInAlpha);
 		}
 		else
 		{
@@ -728,13 +764,13 @@ void Game::ComposeFrame()
 		RetroContent::DrawString(gfx, std::string("GALAXY"), { 800.0f, 280.0f }, 10, Color(250, 210, 90), sqrt(fadeInAlpha));
 
 
-		RetroContent::DrawString(gfx, std::string("START GAME"), { 800.0f, 600.0f }, 6, selectedOption == 0 ? Colors::Red : Colors::Yellow, fadeInAlpha);
+		RetroContent::DrawString(gfx, std::string("START GAME"), { 800.0f, 650.0f }, 6, selectedOption == 0 ? Colors::Red : Colors::Yellow, fadeInAlpha);
 		RetroContent::DrawString(gfx, std::string("EXIT"), { 800.0f, 750.0f }, 6, selectedOption == 1 ? Colors::Red : Colors::Yellow, fadeInAlpha);
 
 		if (selectedOption == 0)
 		{
-			gfx.DrawCircle({ 500.0f, 625.0f }, 20.0f, Colors::Red, fadeInAlpha);
-			gfx.DrawCircle({ 1100.0f, 625.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 500.0f, 655.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			gfx.DrawCircle({ 1100.0f, 655.0f }, 20.0f, Colors::Red, fadeInAlpha);
 		}
 		else
 		{

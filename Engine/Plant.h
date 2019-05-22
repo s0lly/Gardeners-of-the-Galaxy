@@ -2,12 +2,14 @@
 
 #include "Vec2.h"
 #include "Atmosphere.h"
+#include "Colors.h"
 
 
 enum PLANT_TYPE
 {
 	PLANT_TYPE_CARBONEATER,
-	PLANT_TYPE_BIGCARBONEATER
+	PLANT_TYPE_BIGCARBONEATER,
+	MAX_PLANT_NUM
 };
 
 struct Plant
@@ -35,6 +37,8 @@ struct Plant
 
 			maxCutAmount = 60.0f;
 
+			color = Colors::Green;
+
 		}break;
 		case PLANT_TYPE_BIGCARBONEATER:
 		{
@@ -50,6 +54,9 @@ struct Plant
 			maxFoodValue = 100.0f;
 
 			maxCutAmount = 1200.0f;
+
+			color = Colors::Cyan;
+
 		}break;
 		}
 	}
@@ -71,6 +78,7 @@ struct Plant
 	float currentCutAmount = 0.0f;
 	float maxCutAmount;
 
+	Color color;
 
 	float carbonDioxideBreathe;
 	float oxygenBreathe;
@@ -97,4 +105,5 @@ struct Plant
 	{
 		return (ID < rhs.ID);
 	}
+	
 };

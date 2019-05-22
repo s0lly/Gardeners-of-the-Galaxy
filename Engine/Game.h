@@ -102,4 +102,7 @@ private:
 	bool isPausedPressed = false;
 	bool isActionedPressed = false;
 
+	bool isNextSeedPressed = false;
+	bool isPrevSeenPressed = false;
+
 };

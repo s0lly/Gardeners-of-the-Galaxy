@@ -2,6 +2,18 @@
 
 #include "Vec2.h"
 #include "Atmosphere.h"
+#include "Plant.h"
+
+enum WINLOSE
+{
+	LOSEBYBREAK,
+	LOSEBYAIR,
+	LOSEBYFOOD,
+	LOSEBYENERGY,
+	WINBYFOOD,
+	STILLPLAYING
+};
+
 
 struct Player
 {
@@ -51,6 +63,10 @@ struct Player
 	
 	bool isFacingRight = true;
 
+	PLANT_TYPE selectedSeed = PLANT_TYPE_CARBONEATER; //?? take plant instead?
+
+	WINLOSE result = STILLPLAYING;
+
 	float width = 20.0f;
 	float height = 50.0f;
 	Vec2 transformShift{ -width / 2.0f,height };
@@ -71,6 +87,7 @@ struct Player
 		else
 		{
 			isAlive = false;
+			result = WINLOSE::LOSEBYAIR;
 		}
 	}
 
@@ -80,6 +97,7 @@ struct Player
 		if (energy <= 0.0f)
 		{
 			isAlive = false;
+			result = WINLOSE::LOSEBYENERGY;
 		}
 	}
 
@@ -91,5 +109,10 @@ struct Player
 			energy = maxEnergy;
 			isSleeping = false;
 		}
+	}
+
+	Color GetSelectedSeedColor()
+	{
+		return Plant(Vec2(), selectedSeed, -1).color;
 	}
 };
