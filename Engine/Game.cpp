@@ -45,7 +45,23 @@ void Game::Go()
 
 void Game::ProcessInput()
 {
-	if (gamestate == GAMESTATE_RUNNING)
+	if (gamestate == GAMESTATE_STARTSCREEN)
+	{
+		if (wnd.kbd.KeyIsPressed(VK_ESCAPE))
+		{
+			if (!isPausedPressed)
+			{
+				gamestate = GAMESTATE_STARTMENU;
+				isPausedPressed = true;
+				selectedOption = 0;
+			}
+		}
+		else
+		{
+			isPausedPressed = false;
+		}
+	}
+	else if (gamestate == GAMESTATE_RUNNING)
 	{
 		Mat2 playerRotation = Mat2::RotationMatrix(player.angle);
 
@@ -266,7 +282,29 @@ void Game::ProcessInput()
 
 void Game::UpdateModel()
 {
-	if (gamestate == GAMESTATE_RESTARTING)
+	if (gamestate == GAMESTATE::GAMESTATE_STARTSCREEN)
+	{
+		if (fadingIn)
+		{
+			currentFadeInEffect += 3.0f;
+			if (currentFadeInEffect >= maxFadeInEffect)
+			{
+				fadingIn = false;
+			}
+		}
+		else
+		{
+			currentFadeInEffect -= 3.0f;
+		}
+		
+		
+		if (currentFadeInEffect < 0.0f)
+		{
+			currentFadeInEffect = 0.0f;
+			gamestate = GAMESTATE::GAMESTATE_STARTMENU;
+		}
+	}
+	else if (gamestate == GAMESTATE_RESTARTING)
 	{
 		camera = Camera();
 		player = Player();
@@ -678,7 +716,13 @@ void Game::ComposeFrame()
 			}
 		}
 	}
-	if (gamestate == GAMESTATE::GAMESTATE_RESTARTMENU)
+
+	if (gamestate == GAMESTATE::GAMESTATE_STARTSCREEN)
+	{
+		RetroContent::DrawString(gfx, std::string("BY"), { 800.0f, 100.0f }, 6, Color(128, 0, 128), sqrt(fadeInAlpha));
+		RetroContent::DrawString(gfx, std::string("SOLLY"), { 800.0f, 280.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
+	}
+	else if (gamestate == GAMESTATE::GAMESTATE_RESTARTMENU)
 	{
 		std::string loseCondition;
 
@@ -759,6 +803,8 @@ void Game::ComposeFrame()
 	}
 	else if (gamestate == GAMESTATE::GAMESTATE_STARTMENU)
 	{
+		currentFadeInEffect = maxFadeInEffect;
+
 		RetroContent::DrawString(gfx, std::string("GARDENERS"), { 800.0f, 100.0f }, 10, Color(250, 210, 90), sqrt(fadeInAlpha));
 		RetroContent::DrawString(gfx, std::string("OF THE"), { 800.0f, 210.0f }, 4, Color(250, 210, 90), sqrt(fadeInAlpha));
 		RetroContent::DrawString(gfx, std::string("GALAXY"), { 800.0f, 280.0f }, 10, Color(250, 210, 90), sqrt(fadeInAlpha));

@@ -52,8 +52,7 @@ public:
 	Game( const Game& ) = delete;
 	Game& operator=( const Game& ) = delete;
 	void Go();
-
-	GAMESTATE gamestate = GAMESTATE_STARTMENU;
+	GAMESTATE gamestate = GAMESTATE_STARTSCREEN;
 
 private:
 	void ComposeFrame();
@@ -98,6 +97,7 @@ private:
 	float currentFadeInEffect = 0.0f;
 	float maxFadeInEffect = 180.0f;
 	int selectedOption = 0;
+	bool fadingIn = true;
 
 	bool isPausedPressed = false;
 	bool isActionedPressed = false;
