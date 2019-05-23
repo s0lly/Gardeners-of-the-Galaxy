@@ -186,7 +186,7 @@ void Game::ProcessInput()
 			{
 				if (player.centerBotLoc.GetMagnitude() - world.radius < 10.0f)
 				{
-					plants.push_back(Plant(player.centerBotLoc.GetNormalized() * world.radius, player.selectedSeed, plants.size()));
+					plants.push_back(Plant(player.centerBotLoc.GetNormalized() * world.radius, player.selectedSeed, (int)plants.size()));
 				}
 			}
 
@@ -896,8 +896,8 @@ void Game::ComposeFrame()
 
 
 		RetroContent::DrawString(gfx, "SEED TYPE", { 800.0f, 680.0f }, 3, Color(200, 0, 60));
-		gfx.DrawRect(Vec2(760.0f, 720.0f), 80.0f, 80.0f, Colors::Black);
-		gfx.DrawRect(Vec2(765.0f, 725.0f), 70.0f, 70.0f, player.GetSelectedSeedColor());
+		gfx.DrawRect(Vec2(760.0f, 720.0f), (int)80.0f, (int)80.0f, Colors::Black);
+		gfx.DrawRect(Vec2(765.0f, 725.0f), (int)70.0f, (int)70.0f, player.GetSelectedSeedColor());
 
 		switch (player.selectedSeed)
 		{
@@ -937,8 +937,8 @@ void Game::ComposeFrame()
 			{
 				if (plants[i].isBeingCut)
 				{
-					gfx.DrawRect((player.centerBotLoc + Vec2(-60.0f, -60.0f) - camera.loc) * screenTransformFlip + screenTransformShift, 120.0f, 15.0f, Colors::Black, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
-					gfx.DrawRect((player.centerBotLoc + Vec2(-57.5f, -62.5f) - camera.loc) * screenTransformFlip + screenTransformShift, 115.0f * ((plants[i].currentCutAmount / ((plants[i].maxCutAmount) * (plants[i].currentSize / plants[i].maxSize)))), 10.0f, Colors::Blue, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+					gfx.DrawRect((player.centerBotLoc + Vec2(-60.0f, -60.0f) - camera.loc) * screenTransformFlip + screenTransformShift, 120, 15, Colors::Black, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+					gfx.DrawRect((player.centerBotLoc + Vec2(-57.5f, -62.5f) - camera.loc) * screenTransformFlip + screenTransformShift, (int)(115.0f * ((plants[i].currentCutAmount / ((plants[i].maxCutAmount) * (plants[i].currentSize / plants[i].maxSize))))), 10, Colors::Blue, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
 					break;
 				}
 			}
@@ -1003,7 +1003,7 @@ void Game::ComposeFrame()
 			}
 
 			RetroContent::DrawString(gfx, std::string("ALAS"), { 800.0f, 50.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
-			RetroContent::DrawString(gfx, std::string("YOU ARE NO LONGER"), { 800.0f, 230.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
+			RetroContent::DrawString(gfx, std::string("YOU HAVE EXPIRED"), { 800.0f, 230.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
 
 			RetroContent::DrawString(gfx, loseCondition, { 800.0f, 410.0f }, 12, Color(255, 127, 0), sqrt(fadeInAlpha));
 
@@ -1020,11 +1020,6 @@ void Game::ComposeFrame()
 				gfx.DrawCircle({ 500.0f, 770.0f }, 20.0f, Colors::Red, fadeInAlpha);
 				gfx.DrawCircle({ 1100.0f, 770.0f }, 20.0f, Colors::Red, fadeInAlpha);
 			}
-
-
-
-
-			
 		}
 		else
 		{
@@ -1098,11 +1093,12 @@ void Game::ComposeFrame()
 
 
 		RetroContent::DrawString(gfx, std::string("     CONTROLS    "), { 1400.0f, 50.0f }, 3, Colors::Magenta, sqrt(fadeInAlpha));
-		RetroContent::DrawString(gfx, std::string("MOVEMENT  W A S D"), { 1400.0f, 125.0f }, 2, Colors::Magenta, sqrt(fadeInAlpha));
-		RetroContent::DrawString(gfx, std::string("	SELECT	   Q E  "), { 1400.0f, 175.0f }, 2, Colors::Magenta, sqrt(fadeInAlpha));
-		RetroContent::DrawString(gfx, std::string("PLANTING   SPACE "), { 1400.0f, 225.0f }, 2, Colors::Magenta, sqrt(fadeInAlpha));
-		RetroContent::DrawString(gfx, std::string("CHOPPING  CONTROL"), { 1400.0f, 275.0f }, 2, Colors::Magenta, sqrt(fadeInAlpha));
-		RetroContent::DrawString(gfx, std::string("  MENU      ESC  "), { 1400.0f, 325.0f }, 2, Colors::Magenta, sqrt(fadeInAlpha));
+		RetroContent::DrawString(gfx, std::string("MOVEMENT  W A S D"), { 1400.0f, 110.0f }, 2, Colors::Magenta, sqrt(fadeInAlpha));
+		RetroContent::DrawString(gfx, std::string("	SELECT	   Q E  "), { 1400.0f, 160.0f }, 2, Colors::Magenta, sqrt(fadeInAlpha));
+		RetroContent::DrawString(gfx, std::string("PLANTING   SPACE "), { 1400.0f, 210.0f }, 2, Colors::Magenta, sqrt(fadeInAlpha));
+		RetroContent::DrawString(gfx, std::string("CHOPPING  CONTROL"), { 1400.0f, 260.0f }, 2, Colors::Magenta, sqrt(fadeInAlpha));
+		RetroContent::DrawString(gfx, std::string("SLEEPING   ENTER "), { 1400.0f, 310.0f }, 2, Colors::Magenta, sqrt(fadeInAlpha));
+		RetroContent::DrawString(gfx, std::string("  MENU      ESC  "), { 1400.0f, 360.0f }, 2, Colors::Magenta, sqrt(fadeInAlpha));
 
 
 		if (selectedOption == 0)
