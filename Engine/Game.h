@@ -125,4 +125,6 @@ private:
 
 	Sound choppingSound = Sound(L"chopping.wav", Sound::LoopType::AutoFullSound);
 	bool isChoppingSoundOn = false;
+
+	bool levelUpScene = false;
 };

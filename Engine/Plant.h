@@ -9,6 +9,9 @@ enum PLANT_TYPE
 {
 	PLANT_TYPE_CARBONEATER,
 	PLANT_TYPE_BIGCARBONEATER,
+	PLANT_TYPE_FOODFOROXY,
+	PLANT_TYPE_CARBONGUZZLER,
+	PLANT_TYPE_SUPERHARD,
 	MAX_PLANT_NUM
 };
 
@@ -37,7 +40,7 @@ struct Plant
 
 			maxCutAmount = 60.0f;
 
-			color = Colors::Green;
+			color = Color(50, 205, 50);
 
 		}break;
 		case PLANT_TYPE_BIGCARBONEATER:
@@ -47,16 +50,69 @@ struct Plant
 
 			currentSize = 1.0f;
 			maxSize = 300.0f;
+			growthSpeed = 0.2f;
+
+			widthToHeight = 0.1f;
+
+			maxFoodValue = 180.0f;
+
+			maxCutAmount = 1200.0f;
+
+			color = Color(50, 205, 255);
+
+		}break;
+		case PLANT_TYPE_FOODFOROXY:
+		{
+			carbonDioxideBreathe = -0.001f;
+			oxygenBreathe = +0.001f;
+
+			currentSize = 1.0f;
+			maxSize = 100.0f;
+			growthSpeed = 0.2f;
+
+			widthToHeight = 0.1f;
+
+			maxFoodValue = 70.0f;
+
+			maxCutAmount = 1000.0f;
+
+			color = Color(150, 0, 255);
+
+		}break;
+		case PLANT_TYPE_CARBONGUZZLER:
+		{
+			carbonDioxideBreathe = +0.01f;
+			oxygenBreathe = -0.01f;
+
+			currentSize = 1.0f;
+			maxSize = 300.0f;
 			growthSpeed = 0.1f;
 
 			widthToHeight = 0.1f;
 
-			maxFoodValue = 100.0f;
+			maxFoodValue = 5.0f;
 
-			maxCutAmount = 1200.0f;
+			maxCutAmount = 400.0f;
 
-			color = Colors::Cyan;
+			color = Color(255, 127, 0);
 
+		}break;
+		case PLANT_TYPE_SUPERHARD:
+		{
+			carbonDioxideBreathe = +0.00000001f;
+			oxygenBreathe = -0.00000001f;
+
+			currentSize = 1.0f;
+			maxSize = 50.0f;
+			growthSpeed = 0.05f;
+
+			widthToHeight = 0.1f;
+
+			maxFoodValue = 250.0f;
+
+			maxCutAmount = 2500.0f;
+
+			color = Color(255, 192, 203);
 		}break;
 		}
 	}
@@ -87,7 +143,14 @@ struct Plant
 
 	bool CanBreathe(Atmosphere *atmosphere)
 	{
-		return (atmosphere->carbonDioxideLevel >= 0.01f);
+		if (carbonDioxideBreathe > oxygenBreathe)
+		{
+			return (atmosphere->carbonDioxideLevel >= carbonDioxideBreathe);
+		}
+		else
+		{
+			return (atmosphere->oxygenLevel >= oxygenBreathe);
+		}
 	}
 
 	void Breathe(Atmosphere *atmosphere)

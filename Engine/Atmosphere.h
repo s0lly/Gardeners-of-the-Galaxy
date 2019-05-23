@@ -8,7 +8,7 @@ struct Atmosphere
 	float carbonDioxideLevel = 5.0f;
 	float nitrogenLevel = 0.0f; //78.0f
 
-	Color oxygenColor = Colors::Blue;
+	Color oxygenColor = Color(20, 50, 240);
 	Color carbonDioxideColor = Color(255, 127, 0);
 	Color nitrogenColor = Colors::White;
 

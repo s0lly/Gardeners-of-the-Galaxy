@@ -176,8 +176,10 @@ void Game::ProcessInput()
 				isNextSeedPressed = false;
 			}
 
+			int maxPlantNum = player.level > MAX_PLANT_NUM ? MAX_PLANT_NUM : player.level;
+
 			player.selectedSeed = (PLANT_TYPE)(player.selectedSeed < 0 ? 0 : player.selectedSeed);
-			player.selectedSeed = (PLANT_TYPE)(player.selectedSeed >= MAX_PLANT_NUM ? MAX_PLANT_NUM - 1 : player.selectedSeed);
+			player.selectedSeed = (PLANT_TYPE)(player.selectedSeed >= maxPlantNum ? maxPlantNum - 1 : player.selectedSeed);
 
 
 			if (wnd.kbd.KeyIsPressed(VK_SPACE))
@@ -206,21 +208,25 @@ void Game::ProcessInput()
 				player.isCutting = false;
 			}
 
-			if (wnd.kbd.KeyIsPressed(VK_ESCAPE))
-			{
-				if (!isPausedPressed)
-				{
-					gamestate = GAMESTATE_INGAMEMENU;
-					isPausedPressed = true;
-					selectedOption = 0;
-				}
-			}
-			else
-			{
-				isPausedPressed = false;
-			}
+			
+			
 
 		}
+
+		if (wnd.kbd.KeyIsPressed(VK_ESCAPE))
+		{
+			if (!isPausedPressed)
+			{
+				gamestate = GAMESTATE_INGAMEMENU;
+				isPausedPressed = true;
+				selectedOption = 0;
+			}
+		}
+		else
+		{
+			isPausedPressed = false;
+		}
+
 	}
 	else if (gamestate == GAMESTATE_RESTARTMENU)
 	{
@@ -350,7 +356,7 @@ void Game::UpdateModel()
 		{
 			if (currentMasterVolume > 0.01f)
 			{
-				currentMasterVolume *= 0.90;
+				currentMasterVolume *= 0.85;
 			}
 			else
 			{
@@ -365,7 +371,7 @@ void Game::UpdateModel()
 		{
 			if (currentMasterVolume < maxMasterVolume)
 			{
-				currentMasterVolume *= 1.05;
+				currentMasterVolume *= 1.1;
 			}
 			else
 			{
@@ -385,15 +391,6 @@ void Game::UpdateModel()
 			}
 		}
 	}
-	//else
-	//{
-	//	if (musicTimer > musicTrackLengths[currentMusicTrack])
-	//	{
-	//		musicTracks[currentMusicTrack].StopAll();
-	//		musicTracks[currentMusicTrack].Play();
-	//		musicTimer = 0.0f;
-	//	}
-	//}
 
 	SoundSystem::SetMasterVolume(currentMasterVolume);
 
@@ -462,7 +459,7 @@ void Game::UpdateModel()
 			player.centerBotLoc = newPosition;
 		}
 
-		if ((newPosition + Vec2{ player.height * sin(player.angle), player.height * cos(player.angle) } - dome.loc).GetMagnitudeSqrd() < (dome.radius * dome.radius))
+		if ((newPosition + Vec2{ player.height * sin(player.angle), player.height * cos(player.angle) } -dome.loc).GetMagnitudeSqrd() < (dome.radius * dome.radius))
 		{
 			player.centerBotLoc = newPosition;
 		}
@@ -552,10 +549,10 @@ void Game::UpdateModel()
 
 		for (int i = 0; i < plants.size(); i++)
 		{
-			if (plants[i].currentCutAmount >= plants[i].maxCutAmount * (plants[i].currentSize / plants[i].maxSize))
+			if (plants[i].currentCutAmount >= plants[i].maxCutAmount * plants[i].currentSize / plants[i].maxSize)
 			{
 				plants[i].isDead = true;
-				player.foodStored += plants[i].maxFoodValue * (plants[i].currentSize / plants[i].maxSize);
+				player.foodStored += plants[i].maxFoodValue * powf(plants[i].currentSize / plants[i].maxSize, 2.0f);
 			}
 		}
 
@@ -685,27 +682,68 @@ void Game::UpdateModel()
 
 		camera.angle = acosf(yUpNormalized.Dot(camera.loc.GetNormalized())) * (camera.loc.x >= 0.0f ? 1.0f : -1.0f);
 
-		if (spaceship.zLoc > 19.0f)
+		if (!levelUpScene)
 		{
-			spaceship.zLoc -= spaceship.zChange / 5.0f;
-		}
-		else if (spaceship.zLoc > 10.0f)
-		{
-			spaceship.zChange *= 0.97914836f;
-			spaceship.zLoc -= spaceship.zChange / 5.0f;
+			if (spaceship.zLoc > 19.0f)
+			{
+				spaceship.zLoc -= spaceship.zChange / 5.0f;
+			}
+			else if (spaceship.zLoc > 10.0f)
+			{
+				spaceship.zChange *= 0.97914836f;
+				spaceship.zLoc -= spaceship.zChange / 5.0f;
+			}
+			else
+			{
+				spaceship.hasArrived = true;
+			}
+
+			if (spaceship.arrivalTime > 0)
+			{
+				spaceship.arrivalTime -= ((spaceship.zChange / 5.0f) / 60.0f);
+			}
+			else
+			{
+				spaceship.arrivalTime = 0;
+			}
 		}
 		else
 		{
-			spaceship.hasArrived = true;
+			if (spaceship.zLoc < 1810.0f)
+			{
+				spaceship.zLoc += 6.0f;
+			}
+			else
+			{
+				spaceship = Spaceship();
+				levelUpScene = false;
+				if (player.result == WINLOSE::WINBYFOOD)
+				{
+					gamestate = GAMESTATE_RESTARTMENU;
+				}
+			}
 		}
 
-		if (spaceship.arrivalTime > 0)
+		if (spaceship.hasArrived)
 		{
-			spaceship.arrivalTime -= ((spaceship.zChange / 5.0f) / 60.0f);
-		}
-		else
-		{
-			spaceship.arrivalTime = 0;
+			if (player.foodStored >= player.foodRequiredPerLevel * player.level)
+			{
+				levelUpScene = true;
+				player.foodStored = 0;
+				player.level++;
+
+				if (player.level == 6)
+				{
+					player.result = WINLOSE::WINBYFOOD;
+				}
+
+				spaceship.hasArrived = false;
+			}
+			else
+			{
+				player.isAlive = false;
+				player.result = WINLOSE::LOSEBYFOOD;
+			}
 		}
 
 	}
@@ -842,21 +880,54 @@ void Game::ComposeFrame()
 		RetroContent::DrawString(gfx, std::to_string(arrivalTimeMin) + " MIN  " + std::to_string(arrivalTimeSec) + " SEC", { 1425.0f, 50.0f }, 2, Colors::White);
 
 		RetroContent::DrawString(gfx, std::string("OXYGEN LEVEL"), { 1375.0f, 100.0f }, 2, dome.atmosphere.oxygenColor);
-		RetroContent::DrawString(gfx, std::to_string((int)(dome.atmosphere.oxygenLevel + 0.5f)) + "%", { 1525.0f, 100.0f }, 2, dome.atmosphere.oxygenColor);
+		RetroContent::DrawString(gfx, std::to_string((int)(dome.atmosphere.oxygenLevel + 0.499f)) + "%", { 1525.0f, 100.0f }, 2, dome.atmosphere.oxygenColor);
 
 		RetroContent::DrawString(gfx, std::string("CO2 LEVEL"), { 1375.0f, 150.0f }, 2, dome.atmosphere.carbonDioxideColor);
-		RetroContent::DrawString(gfx, std::to_string((int)(dome.atmosphere.carbonDioxideLevel + 0.5f)) + "%", { 1525.0f, 150.0f }, 2, dome.atmosphere.carbonDioxideColor);
+		RetroContent::DrawString(gfx, std::to_string((int)(dome.atmosphere.carbonDioxideLevel + 0.499f)) + "%", { 1525.0f, 150.0f }, 2, dome.atmosphere.carbonDioxideColor);
 
 		RetroContent::DrawString(gfx, std::string("ENERGY LEVEL"), { 1375.0f, 200.0f }, 2, Colors::Cyan);
-		RetroContent::DrawString(gfx, std::to_string((int)(player.energy + 0.5f)) + "%", { 1525.0f, 200.0f }, 2, Colors::Cyan);
+		RetroContent::DrawString(gfx, std::to_string((int)(player.energy + 0.499f)) + "%", { 1525.0f, 200.0f }, 2, Colors::Cyan);
 
-		RetroContent::DrawString(gfx, std::string("FOOD PRODUCED"), { 1375.0f, 250.0f }, 2, Colors::Red);
-		RetroContent::DrawString(gfx, std::to_string((int)(player.foodStored)) + "%", { 1525.0f, 250.0f }, 2, Colors::Red);
+		RetroContent::DrawString(gfx, std::string("FOOD PRODUCED"), { 1375.0f, 250.0f }, 2, Color(200, 50, 50));
+		RetroContent::DrawString(gfx, std::to_string((int)(player.foodStored)) + "%", { 1525.0f, 250.0f }, 2, Color(200, 50, 50));
+
+		RetroContent::DrawString(gfx, std::string("FOOD REQUIRED"), { 1375.0f, 300.0f }, 2, Color(250, 100, 150));
+		RetroContent::DrawString(gfx, std::to_string((int)(player.foodRequiredPerLevel * player.level)) + "%", { 1525.0f, 300.0f }, 2, Color(250, 100, 150));
 
 
-		RetroContent::DrawString(gfx, "SEED TYPE", { 800.0f, 680.0f }, 3, Colors::Red);
+		RetroContent::DrawString(gfx, "SEED TYPE", { 800.0f, 680.0f }, 3, Color(200, 0, 60));
 		gfx.DrawRect(Vec2(760.0f, 720.0f), 80.0f, 80.0f, Colors::Black);
 		gfx.DrawRect(Vec2(765.0f, 725.0f), 70.0f, 70.0f, player.GetSelectedSeedColor());
+
+		switch (player.selectedSeed)
+		{
+		case PLANT_TYPE::PLANT_TYPE_CARBONEATER:
+		{
+			RetroContent::DrawString(gfx, "EATS MEDIUM CO2", { 800.0f, 820.0f }, 2, player.GetSelectedSeedColor());
+			RetroContent::DrawString(gfx, "LOW FOOD OUTPUT", { 800.0f, 850.0f }, 2, player.GetSelectedSeedColor());
+		}break;
+		case PLANT_TYPE::PLANT_TYPE_BIGCARBONEATER:
+		{
+			RetroContent::DrawString(gfx, "GROWS TOO HIGH", { 800.0f, 820.0f }, 2, player.GetSelectedSeedColor());
+			RetroContent::DrawString(gfx, "MEDIUM FOOD OUTPUT", { 800.0f, 850.0f }, 2, player.GetSelectedSeedColor());
+		}break;
+		case PLANT_TYPE::PLANT_TYPE_FOODFOROXY:
+		{
+			RetroContent::DrawString(gfx, "PRODUCES LOTS OF CO2", { 800.0f, 820.0f }, 2, player.GetSelectedSeedColor());
+			RetroContent::DrawString(gfx, "HIGH FOOD OUTPUT", { 800.0f, 850.0f }, 2, player.GetSelectedSeedColor());
+		}break;
+		case PLANT_TYPE::PLANT_TYPE_CARBONGUZZLER:
+		{
+			RetroContent::DrawString(gfx, "EATS LOTS OF CO2", { 800.0f, 820.0f }, 2, player.GetSelectedSeedColor());
+			RetroContent::DrawString(gfx, "MIN FOOD OUTPUT", { 800.0f, 850.0f }, 2, player.GetSelectedSeedColor());
+		}break;
+		case PLANT_TYPE::PLANT_TYPE_SUPERHARD:
+		{
+			RetroContent::DrawString(gfx, "DIFFICULT TO CHOP", { 800.0f, 820.0f }, 2, player.GetSelectedSeedColor());
+			RetroContent::DrawString(gfx, "MASSIVE FOOD OUTPUT", { 800.0f, 850.0f }, 2, player.GetSelectedSeedColor());
+		}break;
+		}
+		
 
 
 
@@ -867,10 +938,37 @@ void Game::ComposeFrame()
 				if (plants[i].isBeingCut)
 				{
 					gfx.DrawRect((player.centerBotLoc + Vec2(-60.0f, -60.0f) - camera.loc) * screenTransformFlip + screenTransformShift, 120.0f, 15.0f, Colors::Black, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
-					gfx.DrawRect((player.centerBotLoc + Vec2(-57.5f, -62.5f) - camera.loc) * screenTransformFlip + screenTransformShift, 115.0f * (plants[i].currentCutAmount / (plants[i].maxCutAmount* (plants[i].currentSize / plants[i].maxSize))), 10.0f, Colors::Blue, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
+					gfx.DrawRect((player.centerBotLoc + Vec2(-57.5f, -62.5f) - camera.loc) * screenTransformFlip + screenTransformShift, 115.0f * ((plants[i].currentCutAmount / ((plants[i].maxCutAmount) * (plants[i].currentSize / plants[i].maxSize)))), 10.0f, Colors::Blue, (player.isAlive ? 1.0f : powf(1.0f - fadeInAlpha, 2.0f)));
 					break;
 				}
 			}
+		}
+
+		if (levelUpScene)
+		{
+			if (player.level < 5)
+			{
+				RetroContent::DrawString(gfx, std::string("SHIPMENT COLLECTED"), { 800.0f, 500.0f }, 3, Color(250, 0, 150));
+				RetroContent::DrawString(gfx, std::string("WE WILL BE BACK SOON"), { 800.0f, 535.0f }, 3, Color(250, 0, 150));
+
+				RetroContent::DrawString(gfx, std::string("TAKE THESE NEW SEEDS"), { 800.0f, 580.0f }, 3, Color(250, 0, 150));
+				RetroContent::DrawString(gfx, std::string("TO GROW MORE CROPS"), { 800.0f, 615.0f }, 3, Color(250, 0, 150));
+			}
+			else if (player.level == 5)
+			{
+				RetroContent::DrawString(gfx, std::string("WE HAVE NEW ORDERS"), { 800.0f, 500.0f }, 3, Color(250, 0, 150));
+				RetroContent::DrawString(gfx, std::string("YOU ARE TO REMAIN HERE"), { 800.0f, 535.0f }, 3, Color(250, 0, 150));
+
+				RetroContent::DrawString(gfx, std::string("THE NEXT SHIPMENT"), { 800.0f, 580.0f }, 3, Colors::Red);
+				RetroContent::DrawString(gfx, std::string("WILL BE YOUR LAST"), { 800.0f, 615.0f }, 3, Colors::Red);
+			}
+			else
+			{
+				RetroContent::DrawString(gfx, std::string("CONGRATULATIONS"), { 800.0f, 500.0f }, 3, Color(150, 0, 250));
+				RetroContent::DrawString(gfx, std::string("YOU HAVE ESCAPED"), { 800.0f, 550.0f }, 3, Color(150, 0, 250));
+				RetroContent::DrawString(gfx, std::string("IN THE FOOD PODS"), { 800.0f, 600.0f }, 3, Color(150, 0, 250));
+			}
+			
 		}
 	}
 
@@ -878,48 +976,75 @@ void Game::ComposeFrame()
 	{
 		RetroContent::DrawString(gfx, std::string("BY"), { 800.0f, 200.0f }, 4, Color(128, 0, 128), sqrt(fadeInAlpha));
 		RetroContent::DrawString(gfx, std::string("SOLLY"), { 800.0f, 280.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
+
+		RetroContent::DrawString(gfx, std::string("MUSIC BY ERIC SKIFF"), { 800.0f, 800.0f }, 3, Color(200, 0, 60), sqrt(fadeInAlpha));
 	}
 	else if (gamestate == GAMESTATE::GAMESTATE_RESTARTMENU)
 	{
-		std::string loseCondition;
-
-		if (player.result == WINLOSE::LOSEBYAIR)
+		if (player.result != WINLOSE::WINBYFOOD)
 		{
-			loseCondition = "CARBONATED OUT";
-		}
-		if (player.result == WINLOSE::LOSEBYBREAK)
-		{
-			loseCondition = "DOME BREACH";
-		}
-		if (player.result == WINLOSE::LOSEBYFOOD)
-		{
-			loseCondition = "DEATH BY FOOD POLICE";
-		}
-		if (player.result == WINLOSE::LOSEBYENERGY)
-		{
-			loseCondition = "TOO TIRED TO GO ON";
-		}
+			std::string loseCondition;
 
-		RetroContent::DrawString(gfx, std::string("ALAS"), { 800.0f, 100.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
-		RetroContent::DrawString(gfx, std::string("YOU ARE NO LONGER"), { 800.0f, 280.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
+			if (player.result == WINLOSE::LOSEBYAIR)
+			{
+				loseCondition = "CARBONATED OUT";
+			}
+			if (player.result == WINLOSE::LOSEBYBREAK)
+			{
+				loseCondition = "DOME BREACH";
+			}
+			if (player.result == WINLOSE::LOSEBYFOOD)
+			{
+				loseCondition = "DEATH BY FOOD POLICE";
+			}
+			if (player.result == WINLOSE::LOSEBYENERGY)
+			{
+				loseCondition = "TOO TIRED TO GO ON";
+			}
 
-		RetroContent::DrawString(gfx, loseCondition, { 800.0f, 460.0f }, 12, Colors::Red, sqrt(fadeInAlpha));
+			RetroContent::DrawString(gfx, std::string("ALAS"), { 800.0f, 50.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
+			RetroContent::DrawString(gfx, std::string("YOU ARE NO LONGER"), { 800.0f, 230.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
 
-		RetroContent::DrawString(gfx, std::string("RESTART"), { 800.0f, 650.0f }, 6, selectedOption == 0 ? Colors::Red : Colors::Yellow, fadeInAlpha);
-		RetroContent::DrawString(gfx, std::string("MAIN MENU"), { 800.0f, 750.0f }, 6, selectedOption == 1 ? Colors::Red : Colors::Yellow, fadeInAlpha);
+			RetroContent::DrawString(gfx, loseCondition, { 800.0f, 410.0f }, 12, Color(255, 127, 0), sqrt(fadeInAlpha));
 
-		if (selectedOption == 0)
-		{
-			gfx.DrawCircle({ 500.0f, 670.0f }, 20.0f, Colors::Red, fadeInAlpha);
-			gfx.DrawCircle({ 1100.0f, 670.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			RetroContent::DrawString(gfx, std::string("RESTART"), { 800.0f, 650.0f }, 6, selectedOption == 0 ? Colors::Red : Colors::Yellow, fadeInAlpha);
+			RetroContent::DrawString(gfx, std::string("MAIN MENU"), { 800.0f, 750.0f }, 6, selectedOption == 1 ? Colors::Red : Colors::Yellow, fadeInAlpha);
+
+			if (selectedOption == 0)
+			{
+				gfx.DrawCircle({ 500.0f, 670.0f }, 20.0f, Colors::Red, fadeInAlpha);
+				gfx.DrawCircle({ 1100.0f, 670.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			}
+			else
+			{
+				gfx.DrawCircle({ 500.0f, 770.0f }, 20.0f, Colors::Red, fadeInAlpha);
+				gfx.DrawCircle({ 1100.0f, 770.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			}
+
+
+
+
+			
 		}
 		else
 		{
-			gfx.DrawCircle({ 500.0f, 770.0f }, 20.0f, Colors::Red, fadeInAlpha);
-			gfx.DrawCircle({ 1100.0f, 770.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			RetroContent::DrawString(gfx, std::string("HOME SWEET HOME"), { 800.0f, 50.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
+			RetroContent::DrawString(gfx, std::string("AND EARTHLY GARDENS"), { 800.0f, 230.0f }, 12, Color(128, 0, 128), sqrt(fadeInAlpha));
+
+			RetroContent::DrawString(gfx, std::string("RESTART"), { 800.0f, 650.0f }, 6, selectedOption == 0 ? Colors::Red : Colors::Yellow, fadeInAlpha);
+			RetroContent::DrawString(gfx, std::string("MAIN MENU"), { 800.0f, 750.0f }, 6, selectedOption == 1 ? Colors::Red : Colors::Yellow, fadeInAlpha);
+
+			if (selectedOption == 0)
+			{
+				gfx.DrawCircle({ 500.0f, 670.0f }, 20.0f, Colors::Red, fadeInAlpha);
+				gfx.DrawCircle({ 1100.0f, 670.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			}
+			else
+			{
+				gfx.DrawCircle({ 500.0f, 770.0f }, 20.0f, Colors::Red, fadeInAlpha);
+				gfx.DrawCircle({ 1100.0f, 770.0f }, 20.0f, Colors::Red, fadeInAlpha);
+			}
 		}
-
-
 
 
 		if (currentFadeInEffect < maxFadeInEffect)
@@ -930,6 +1055,7 @@ void Game::ComposeFrame()
 		{
 			currentFadeInEffect = maxFadeInEffect;
 		}
+
 	}
 	else if (gamestate == GAMESTATE::GAMESTATE_INGAMEMENU)
 	{

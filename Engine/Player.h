@@ -76,6 +76,9 @@ struct Player
 	int sleepAnimation = 0;
 	int sleepAnimationFade = 0;
 
+	int level = 1;
+	int foodRequiredPerLevel = 50;
+
 	void Breathe(Atmosphere *atmosphere)
 	{
 		float breathingRate = 0.01f * (isMoving ? 2.0f : 1.0f);
@@ -103,7 +106,7 @@ struct Player
 
 	void Sleep()
 	{
-		ExpendEnergy(-0.05f);
+		ExpendEnergy(-0.075f);
 		if (energy > maxEnergy)
 		{
 			energy = maxEnergy;
