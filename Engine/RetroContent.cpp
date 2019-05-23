@@ -1,3 +1,10 @@
+/*******************************************************************************************
+*	Code and amendments by s0lly														   *
+*	https://www.youtube.com/c/s0lly							                               *
+*	https://s0lly.itch.io/																   *
+*	https://www.instagram.com/s0lly.gaming/												   *
+********************************************************************************************/
+
 #include "RetroContent.h"
 
 void RetroContent::DrawString(Graphics& gfx, std::string word, Vec2 loc, int size, Color c, float alpha)

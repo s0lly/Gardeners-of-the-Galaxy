@@ -1,5 +1,7 @@
 This is my entry for the Weekly Game Jam 97. The theme is "Strange Garden", and I think is a pretty strange take on the gardening game sim! Hope you enjoy!
 
+This game has only been tested on Windows 10 and is assumed to only work on that platform. Please let me know if it doesn't work for you if you are using that platform.
+
 
 Game Premise:
 
@@ -51,3 +53,14 @@ Music by Eric Skiff, song "All of Us" for the intro scene and the following tune
 "Arpanauts"
 "Prologue"
 (All available at http://EricSkiff.com/music - the Creative Commons Attribution 4.0 (CC-BY) license can be found here: https://creativecommons.org/licenses/by/4.0/)
+
+
+
+
+by s0lly
+https://www.youtube.com/c/s0lly
+https://www.instagram.com/s0lly.gaming/
+https://twitter.com/s0lly
+
+THE CODE IS PROVIDED WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE CODE OR THE USE OR OTHER DEALINGS IN THE CODE.

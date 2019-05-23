@@ -18,6 +18,15 @@
  *	You should have received a copy of the GNU General Public License					  *
  *	along with The Chili DirectX Framework.  If not, see <http://www.gnu.org/licenses/>.  *
  ******************************************************************************************/
+
+ /*******************************************************************************************
+ *	Code and amendments by s0lly														   *
+ *	https://www.youtube.com/c/s0lly							                               *
+ *	https://s0lly.itch.io/																   *
+ *	https://www.instagram.com/s0lly.gaming/												   *
+ ********************************************************************************************/
+
+
 #include "MainWindow.h"
 #include "Game.h"
 #include <thread>
